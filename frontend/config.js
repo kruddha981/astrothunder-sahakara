@@ -38,6 +38,11 @@
 
     const { url, key } = getStoredConfig();
 
+    if (!key || key.startsWith('replace-with-your-')) {
+      console.warn('[Sahakara] Supabase anon key is not configured; using the backend API only.');
+      return null;
+    }
+
     if (window.supabase && typeof window.supabase.createClient === 'function') {
       try {
         supabaseClient = window.supabase.createClient(url, key);
