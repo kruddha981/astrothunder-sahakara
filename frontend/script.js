@@ -1272,7 +1272,7 @@ async function handlePostSubmit(e) {
 
   let donation;
   try {
-    const response = await fetch('http://localhost:3001/api/donations', {
+    const response = await fetch(`${window.SahakaraConfig.get().apiBaseUrl}/api/donations`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1383,7 +1383,7 @@ async function handlePostSubmit(e) {
 /* ==========================================================================
    7. Authentication, Free Email OTP & State Management
    ========================================================================== */
-const AUTH_API_BASE = 'http://localhost:3001/api/auth';
+const AUTH_API_BASE = `${window.SahakaraConfig.get().apiBaseUrl}/api/auth`;
 let authState = {
   token: localStorage.getItem('sahakara_auth_token') || null,
   user: JSON.parse(localStorage.getItem('sahakara_auth_user') || 'null')

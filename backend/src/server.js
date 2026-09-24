@@ -7,7 +7,11 @@ const miscRouter = require('./routes/misc');
 const { router: authRouter, initializeAuth } = require('./routes/auth');
 
 const app = express();
-app.use(cors());
+const allowedOrigins = (process.env.FRONTEND_ORIGIN || 'http://localhost:8080')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+app.use(cors({ origin: allowedOrigins }));
 app.use(express.json());
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));

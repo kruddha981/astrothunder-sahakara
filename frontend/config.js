@@ -5,14 +5,16 @@
 
 (function () {
   const DEFAULT_CONFIG = {
-    SUPABASE_URL: 'https://wjkaarbhkwqcepljrmlo.supabase.co',
-    SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indqa2FhcmJoa3dxY2VwbGpybWxvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAyNzM5MDksImV4cCI6MjEwNTg0OTkwOX0.57TsWW6K_IlsFwzmpRxc3B-iaXDs6eCklg7bw7b7ojM'
+    API_BASE_URL: 'http://localhost:3001',
+    SUPABASE_URL: 'https://kzocpeydfecvopjphcmc.supabase.co',
+    SUPABASE_ANON_KEY: 'replace-with-your-supabase-anon-key'
   };
 
   function getStoredConfig() {
     const localUrl = localStorage.getItem('SAHAKARA_SUPABASE_URL');
     const localKey = localStorage.getItem('SAHAKARA_SUPABASE_ANON_KEY');
     return {
+      apiBaseUrl: localStorage.getItem('SAHAKARA_API_BASE_URL') || window.ENV?.API_BASE_URL || DEFAULT_CONFIG.API_BASE_URL,
       url: localUrl || window.ENV?.SUPABASE_URL || DEFAULT_CONFIG.SUPABASE_URL,
       key: localKey || window.ENV?.SUPABASE_ANON_KEY || DEFAULT_CONFIG.SUPABASE_ANON_KEY,
       isCustom: Boolean(localUrl || window.ENV?.SUPABASE_URL)
