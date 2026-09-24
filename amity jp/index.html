@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sahakara — National Food Rescue Platform</title>
+  <meta name="description" content="Instant surplus food matching platform connecting commercial donors to shelters, volunteer drivers, and gaushalas across India.">
+  
+  <!-- Modern Sans-serif Typography: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="styles.css">
+  
+  <!-- Leaflet.js for Interactive Real-Time Jaipur Map -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+</head>
+<body>
+
+  <!-- Top Announcement Bar -->
+  <div class="announcement-bar">
+    <div class="container announcement-content">
+      <span class="announcement-pill">Live in Jaipur</span>
+      <span class="announcement-text">Operating live across Jaipur cluster. Zero fees for non-profit shelters.</span>
+      <a href="#ladder" class="announcement-link">
+        Learn how the ladder works
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </a>
+    </div>
+  </div>
+
+  <!-- 1. Sticky Navbar -->
+  <header class="navbar" id="top">
+    <div class="container navbar-container">
+      
+      <!-- Brand Logo -->
+      <a href="#top" class="brand-logo" aria-label="Sahakara Home">
+        <div class="brand-symbol">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+        <span class="brand-name">Sahakara</span>
+      </a>
+
+      <!-- Navigation Links -->
+      <nav class="nav-links" aria-label="Main Navigation">
+        <a href="#how-it-works" class="nav-item">How it works</a>
+        <a href="#ladder" class="nav-item">Ladder</a>
+        <a href="#helpline" class="nav-item">Helpline</a>
+        <a href="#impact" class="nav-item">Impact</a>
+        <a href="#coverage" class="nav-item">Coverage</a>
+      </nav>
+
+      <!-- Action Buttons -->
+      <div class="nav-actions">
+        <button type="button" class="btn btn-ghost" onclick="openSignInModal()">Sign in</button>
+        <button type="button" class="btn btn-primary" onclick="openPostModal()">
+          <span>Post surplus food</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <main>
+    
+    <!-- 2. Hero Section -->
+    <section class="hero-section">
+      <div class="container">
+        
+        <div class="hero-header">
+          <div class="hero-tag">
+            <span class="status-dot"></span>
+            SURPLUS REDISTRIBUTION PROTOCOL
+          </div>
+          <h1 class="hero-title">Nothing reaches the dumpster.</h1>
+          <p class="hero-subtitle">
+            Instant matching connects commercial surplus food from messes, caterers, and banquets to verified shelters and drivers in minutes.
+          </p>
+
+          <div class="hero-cta-group">
+            <button type="button" class="btn btn-primary btn-lg" onclick="openPostModal()">
+              <span>Post surplus food</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+            <a href="tel:18002024490" class="btn btn-secondary btn-lg">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+              <span>Call helpline (1800 202 4490)</span>
+            </a>
+          </div>
+
+          <div class="hero-trust-bar">
+            <span>Trusted by commercial kitchens:</span>
+            <div class="trust-pills">
+              <span class="trust-pill">Hostel Messes</span>
+              <span class="trust-pill">Catering Networks</span>
+              <span class="trust-pill">Banquet Halls</span>
+              <span class="trust-pill">Corporate Canteens</span>
+              <span class="trust-pill">Hotels</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Realistic Product Mockup: Browser Window Frame -->
+        <div class="mockup-wrapper">
+          <div class="mockup-frame">
+            
+            <!-- Window Titlebar -->
+            <div class="mockup-titlebar">
+              <div class="window-controls">
+                <span class="window-dot red"></span>
+                <span class="window-dot yellow"></span>
+                <span class="window-dot green"></span>
+              </div>
+              <div class="mockup-url-bar">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <span>sahakara.org/dispatch/live/SK-8821</span>
+              </div>
+              <div class="mockup-badge">
+                <span class="live-pulse"></span>
+                LIVE DISPATCH
+              </div>
+            </div>
+
+            <!-- Card Content inside Mockup -->
+            <div class="mockup-content">
+              
+              <!-- Left: Live Donation Card -->
+              <div class="live-card">
+                
+                <div class="live-card-header">
+                  <div class="donor-details">
+                    <span class="card-kicker">ACTIVE RESCUE BATCH #SK-8821</span>
+                    <h3 class="food-title">40 plates veg pulao, safe for 3 hrs</h3>
+                    <p class="donor-source">Posted by <strong>Grand Orchid Banquet &amp; Dining</strong> &bull; Kitchen Dock Gate 2</p>
+                  </div>
+                  <div class="temp-badge">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>
+                    <span>64&deg;C Safe Temp</span>
+                  </div>
+                </div>
+
+                <!-- Stepper -->
+                <div class="stepper-wrapper">
+                  <div class="stepper-track">
+                    <div class="stepper-line-filled"></div>
+                  </div>
+                  
+                  <div class="stepper-steps">
+                    <div class="step-node completed">
+                      <div class="step-circle">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                      </div>
+                      <span class="step-label">Posted</span>
+                      <span class="step-time">22:12</span>
+                    </div>
+
+                    <div class="step-node completed">
+                      <div class="step-circle">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                      </div>
+                      <span class="step-label">Matched</span>
+                      <span class="step-time">22:13</span>
+                    </div>
+
+                    <div class="step-node active">
+                      <div class="step-circle current">
+                        <span class="active-dot"></span>
+                      </div>
+                      <span class="step-label">Picked up</span>
+                      <span class="step-time">22:24</span>
+                    </div>
+
+                    <div class="step-node">
+                      <div class="step-circle"></div>
+                      <span class="step-label">Delivered</span>
+                      <span class="step-time">ETA 22:42</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Match & Driver Meta Grid -->
+                <div class="dispatch-meta-grid">
+                  <div class="meta-box">
+                    <div class="meta-icon">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                    </div>
+                    <div>
+                      <span class="meta-title">Matched Shelter</span>
+                      <strong class="meta-value">Ananda Seva Ashram (Node 04)</strong>
+                      <span class="meta-sub">2.4 km away &bull; Capacity confirmed for 50 meals</span>
+                    </div>
+                  </div>
+
+                  <div class="meta-box">
+                    <div class="meta-icon">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                    </div>
+                    <div>
+                      <span class="meta-title">Assigned Driver</span>
+                      <strong class="meta-value">Driver Vikram R. (EV-Carrier)</strong>
+                      <span class="meta-sub">Arriving at shelter in 14 mins &bull; OTP: 4419</span>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 3. Stats Row -->
+    <section class="section-stats" id="impact">
+      <div class="container">
+        <div class="stats-grid">
+          
+          <div class="stat-card">
+            <div class="stat-number-wrap">
+              <span class="stat-number" id="stat-meals-count">1,482,930</span>
+            </div>
+            <div class="stat-title">Meals rescued</div>
+            <div class="stat-desc">Wholesome prepared food delivered directly to certified shelters.</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-number-wrap">
+              <span class="stat-number" id="stat-kg-count">593,170</span>
+              <span class="stat-unit">kg</span>
+            </div>
+            <div class="stat-title">Kg diverted from landfill</div>
+            <div class="stat-desc">Preventing methane emissions and organic waste accumulation.</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-number-wrap">
+              <span class="stat-number">1</span>
+              <span class="stat-unit">city live</span>
+            </div>
+            <div class="stat-title">Live in Jaipur</div>
+            <div class="stat-desc">Active localized volunteer dispatch cluster with upcoming national rollout.</div>
+          </div>
+
+          <div class="stat-card stat-zero">
+            <div class="stat-number-wrap">
+              <span class="stat-number highlight-zero">0</span>
+            </div>
+            <div class="stat-title">Dumpster: 0</div>
+            <div class="stat-desc">Strict zero-landfill threshold via our 4-tier Last Resort Ladder.</div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. Bento Grid (4 Cards of Mixed Sizes) -->
+    <section class="section-bento" id="ladder">
+      <div class="container">
+        
+        <div class="section-title-wrap">
+          <span class="section-kicker">SYSTEM CAPABILITIES</span>
+          <h2 class="section-heading">Engineered for zero waste.</h2>
+          <p class="section-subtext">Four core architectural pillars ensuring fast pickup, inclusive access, and guaranteed redistribution.</p>
+        </div>
+
+        <div class="bento-grid">
+          
+          <!-- Card A: Real-Time Interactive Jaipur Food Rescue Map (Large Left) -->
+          <div class="bento-card bento-span-8 map-bento-card">
+            <div class="bento-card-header map-header-flex">
+              <div class="header-left">
+                <div class="bento-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+                </div>
+                <div class="bento-text">
+                  <div class="map-title-row">
+                    <h3 class="bento-title">Real-time Jaipur rescue radar</h3>
+                    <span class="live-radar-badge"><span class="live-pulse"></span> LIVE JAIPUR (ZONE 1)</span>
+                  </div>
+                  <p class="bento-sub">Sub-second radius routing factoring vehicle capacity, traffic latency, and dietary guidelines.</p>
+                </div>
+              </div>
+
+              <!-- Map Filter Controls -->
+              <div class="map-filter-chips" id="map-category-filters">
+                <button type="button" class="map-chip active" onclick="filterMapNodes('all', this)">All (8)</button>
+                <button type="button" class="map-chip" onclick="filterMapNodes('donor', this)">Kitchens</button>
+                <button type="button" class="map-chip" onclick="filterMapNodes('shelter', this)">Shelters (4)</button>
+                <button type="button" class="map-chip" onclick="filterMapNodes('driver', this)">Drivers (3)</button>
+                <button type="button" class="map-chip" onclick="filterMapNodes('gaushala', this)">Gaushalas</button>
+              </div>
+            </div>
+
+            <!-- Leaflet Interactive Map Container -->
+            <div class="live-map-wrapper">
+              <div id="jaipur-live-map" class="jaipur-leaflet-map" style="height: 380px; width: 100%; border-radius: 12px;"></div>
+
+              <!-- Floating Live Telemetry HUD -->
+              <div class="map-telemetry-hud" id="map-telemetry-panel">
+                <div class="hud-header">
+                  <div class="hud-driver-dot"></div>
+                  <strong id="hud-driver-name">Vikram R. (EV-Carrier)</strong>
+                  <span class="hud-tag" id="hud-batch-tag">#SK-8821</span>
+                </div>
+                <div class="hud-stats-grid">
+                  <div class="hud-stat-item">
+                    <span class="hud-label">GPS Speed</span>
+                    <strong class="hud-val" id="hud-speed">32 km/h</strong>
+                  </div>
+                  <div class="hud-stat-item">
+                    <span class="hud-label">Safe Temp</span>
+                    <strong class="hud-val green" id="hud-temp">64.0°C</strong>
+                  </div>
+                  <div class="hud-stat-item">
+                    <span class="hud-label">ETA</span>
+                    <strong class="hud-val" id="hud-eta">14 mins</strong>
+                  </div>
+                  <div class="hud-stat-item">
+                    <span class="hud-label">Battery</span>
+                    <strong class="hud-val" id="hud-battery">86% EV</strong>
+                  </div>
+                </div>
+                <div class="hud-route-info">
+                  <span class="hud-route-text"><strong>From:</strong> Amity Campus Mess &rarr; <strong>To:</strong> Ananda Seva Ashram</span>
+                </div>
+              </div>
+
+              <!-- Map Legend Overlay -->
+              <div class="map-legend-pills">
+                <span class="m-leg donor"><span class="leg-dot"></span> Campus/Mess</span>
+                <span class="m-leg shelter"><span class="leg-dot"></span> Shelters</span>
+                <span class="m-leg driver"><span class="leg-dot"></span> EV Driver</span>
+                <span class="m-leg gaushala"><span class="leg-dot"></span> Gaushalas</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card B: Last Resort Ladder with Live Countdown (Right Column) -->
+          <div class="bento-card bento-span-4">
+            <div class="bento-card-header">
+              <div class="bento-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+              </div>
+              <div class="bento-text">
+                <h3 class="bento-title">Last Resort Ladder</h3>
+                <p class="bento-sub">Guaranteed fallback tier if primary recipient is unavailable.</p>
+              </div>
+            </div>
+
+            <!-- Ladder List -->
+            <div class="bento-ladder-list">
+              
+              <div class="ladder-row active-tier">
+                <div class="tier-num">01</div>
+                <div class="tier-info">
+                  <div class="tier-title-row">
+                    <strong>Nearby shelter</strong>
+                    <span class="tier-countdown" id="ladder-timer">28:40 left</span>
+                  </div>
+                  <span class="tier-desc">Primary 5km radius distribution</span>
+                </div>
+              </div>
+
+              <div class="ladder-row">
+                <div class="tier-num">02</div>
+                <div class="tier-info">
+                  <div class="tier-title-row">
+                    <strong>Farther shelter</strong>
+                    <span class="tier-meta">Secondary 18km</span>
+                  </div>
+                  <span class="tier-desc">Bulk relays &amp; larger community kitchens</span>
+                </div>
+              </div>
+
+              <div class="ladder-row">
+                <div class="tier-num">03</div>
+                <div class="tier-info">
+                  <div class="tier-title-row">
+                    <strong>Animal shelter (gaushala)</strong>
+                    <span class="tier-meta">Raw / Grain</span>
+                  </div>
+                  <span class="tier-desc">Registered cattle &amp; animal rescues</span>
+                </div>
+              </div>
+
+              <div class="ladder-row compost-tier">
+                <div class="tier-num">04</div>
+                <div class="tier-info">
+                  <div class="tier-title-row">
+                    <strong>Municipal Compost</strong>
+                    <span class="tier-meta">Soil Recovery</span>
+                  </div>
+                  <span class="tier-desc">Zero organic waste reaches landfill</span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Card C: Works Without a Smartphone (Left 4 cols / bottom) -->
+          <div class="bento-card bento-span-6" id="helpline">
+            <div class="bento-card-header">
+              <div class="bento-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+              </div>
+              <div class="bento-text">
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                  <h3 class="bento-title">Works without a smartphone</h3>
+                  <span class="live-radar-badge" style="font-size:0.625rem;">IVR &amp; SMS ENGINE</span>
+                </div>
+                <p class="bento-sub">Designed for ground-reality kitchen staff via toll-free voice and simple SMS shortcodes.</p>
+              </div>
+            </div>
+
+            <div class="phone-sms-mockup">
+              <!-- Toll Free Call Banner -->
+              <div class="helpline-badge-row">
+                <div class="badge-helpline-icon">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                </div>
+                <div>
+                  <span class="helpline-label">24/7 Toll-Free Voice &amp; IVR Line</span>
+                  <div class="helpline-digits">1800 202 4490</div>
+                </div>
+              </div>
+
+              <!-- SMS Exchange Simulation Container -->
+              <div class="sms-exchange-box" id="sms-exchange-container">
+                <div class="sms-line donor-sms">
+                  <span class="sms-sender">MESS SUPERVISOR &bull; SMS to 56161</span>
+                  <div class="sms-bubble" id="sms-bubble-donor">FOOD 60 MEALS VEG CURRY RICE READY 22:30 PIN 302001</div>
+                </div>
+                <div class="sms-line driver-sms">
+                  <span class="sms-sender">SAHAKARA DISPATCH &bull; Instant Relay</span>
+                  <div class="sms-bubble reply" id="sms-bubble-reply">DISPATCH: Pickup 60 meals at Hostel Mess. Matched to Ananda Seva Ashram. Driver Vikram R. assigned. Handover OTP: 4419.</div>
+                </div>
+              </div>
+
+              <!-- Interactive SMS Tester for Judges -->
+              <div class="sms-test-controls">
+                <span class="sms-quick-label">⚡ Live SMS Simulator (Test Instant Dispatch):</span>
+                <div class="sms-quick-buttons">
+                  <button type="button" class="sms-quick-btn" onclick="simulateSmsPreset('amity')">🍱 Amity Mess 50 Meals</button>
+                  <button type="button" class="sms-quick-btn" onclick="simulateSmsPreset('banquet')">🎉 Banquet 100 Portions</button>
+                  <button type="button" class="sms-quick-btn" onclick="simulateSmsPreset('accept')">⚡ Driver ACCEPT</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card D: Live Impact with Bar Chart (Right 6 cols / bottom) -->
+          <div class="bento-card bento-span-6">
+            <div class="bento-card-header">
+              <div class="bento-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+              </div>
+              <div class="bento-text">
+                <h3 class="bento-title">Real-time rescue impact</h3>
+                <p class="bento-sub">Consistent 99.4% distribution success rate with transparent audit trails.</p>
+              </div>
+            </div>
+
+            <!-- Vector SVG Bar Chart -->
+            <div class="impact-chart-box">
+              <div class="chart-legend-row">
+                <div class="legend-item">
+                  <span class="legend-dot green"></span>
+                  <span>Human Shelters (84%)</span>
+                </div>
+                <div class="legend-item">
+                  <span class="legend-dot light-green"></span>
+                  <span>Gaushalas (13%)</span>
+                </div>
+                <div class="legend-item">
+                  <span class="legend-dot grey"></span>
+                  <span>Compost (3%)</span>
+                </div>
+                <div class="legend-item zero">
+                  <span class="legend-dot red-zero"></span>
+                  <span>Dumpster (0%)</span>
+                </div>
+              </div>
+
+              <!-- Bar Graphic -->
+              <div class="bar-chart-visual">
+                <div class="chart-col">
+                  <div class="bar-container">
+                    <div class="bar-fill green" style="height: 65%;"></div>
+                  </div>
+                  <span class="bar-label">Mon</span>
+                </div>
+                <div class="chart-col">
+                  <div class="bar-container">
+                    <div class="bar-fill green" style="height: 78%;"></div>
+                  </div>
+                  <span class="bar-label">Tue</span>
+                </div>
+                <div class="chart-col">
+                  <div class="bar-container">
+                    <div class="bar-fill green" style="height: 85%;"></div>
+                  </div>
+                  <span class="bar-label">Wed</span>
+                </div>
+                <div class="chart-col">
+                  <div class="bar-container">
+                    <div class="bar-fill green" style="height: 92%;"></div>
+                  </div>
+                  <span class="bar-label">Thu</span>
+                </div>
+                <div class="chart-col">
+                  <div class="bar-container">
+                    <div class="bar-fill green" style="height: 96%;"></div>
+                  </div>
+                  <span class="bar-label">Fri</span>
+                </div>
+                <div class="chart-col">
+                  <div class="bar-container">
+                    <div class="bar-fill green" style="height: 100%;"></div>
+                  </div>
+                  <span class="bar-label">Sat</span>
+                </div>
+                <div class="chart-col">
+                  <div class="bar-container">
+                    <div class="bar-fill green" style="height: 94%;"></div>
+                  </div>
+                  <span class="bar-label">Sun</span>
+                </div>
+              </div>
+
+              <div class="chart-footer-metric">
+                <strong>Average dispatch response latency:</strong>
+                <span>88 seconds from post to volunteer driver accept</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 5. How It Works -->
+    <section class="section-how" id="how-it-works">
+      <div class="container">
+        
+        <div class="section-title-wrap text-center">
+          <span class="section-kicker">THREE SIMPLE STEPS</span>
+          <h2 class="section-heading">How Sahakara works</h2>
+          <p class="section-subtext">The fastest path from extra food in commercial kitchens to hungry recipients nearby.</p>
+        </div>
+
+        <div class="how-steps-row">
+          
+          <!-- Step 1 -->
+          <div class="how-step-card">
+            <div class="step-icon-wrap">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
+            </div>
+            <div class="step-badge">Step 01</div>
+            <h3 class="step-heading">Post</h3>
+            <p class="step-paragraph">
+              Commercial kitchens enter portion count, food classification (veg/cooked/dry), and safe pickup deadline via web, telephone, or SMS.
+            </p>
+          </div>
+
+          <!-- Connector Line -->
+          <div class="how-divider">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </div>
+
+          <!-- Step 2 -->
+          <div class="how-step-card">
+            <div class="step-icon-wrap">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>
+              </svg>
+            </div>
+            <div class="step-badge">Step 02</div>
+            <h3 class="step-heading">Match</h3>
+            <p class="step-paragraph">
+              The automated dispatch engine calculates recipient suitability, distance, and driver proximity to confirm a verified shelter within seconds.
+            </p>
+          </div>
+
+          <!-- Connector Line -->
+          <div class="how-divider">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </div>
+
+          <!-- Step 3 -->
+          <div class="how-step-card">
+            <div class="step-icon-wrap">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+              </svg>
+            </div>
+            <div class="step-badge">Step 03</div>
+            <h3 class="step-heading">Deliver</h3>
+            <p class="step-paragraph">
+              A nearby volunteer or shelter vehicle collects the surplus in insulated containers. Handover is validated via a secure 4-digit OTP.
+            </p>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Interactive Zero-Waste Impact Calculator (Hackathon Feature) -->
+    <section class="section-calculator" id="calculator">
+      <div class="container">
+        <div class="calculator-box">
+          <div class="calculator-header">
+            <span class="section-kicker">INTERACTIVE IMPACT SIMULATOR</span>
+            <h2 class="section-heading">Calculate your kitchen's rescue footprint.</h2>
+            <p class="section-subtext">Move the slider to see the immediate humanitarian, ecological, and economic return of redirecting surplus food in Jaipur.</p>
+          </div>
+
+          <div class="calculator-grid">
+            <div class="calculator-controls">
+              <div class="calc-group">
+                <div class="calc-label-row">
+                  <label for="calc-surplus-range">Daily Surplus Meals: <strong id="calc-meals-display">120 meals/day</strong></label>
+                  <span class="calc-pill" id="calc-kg-display">54 kg/day</span>
+                </div>
+                <input type="range" id="calc-surplus-range" min="15" max="1000" value="120" step="5" class="calc-slider" oninput="updateCalculator(this.value)">
+                <div class="calc-range-marks">
+                  <span>Small Cafe (15)</span>
+                  <span>Campus Mess (200)</span>
+                  <span>Mega Banquet (1000)</span>
+                </div>
+              </div>
+
+              <div class="calc-kitchen-types">
+                <span class="kitchen-type-label">Select Kitchen Archetype:</span>
+                <div class="type-chips">
+                  <button type="button" class="type-chip active" onclick="setCalcType('mess', this)">Amity Campus Mess</button>
+                  <button type="button" class="type-chip" onclick="setCalcType('banquet', this)">Banquet Hall</button>
+                  <button type="button" class="type-chip" onclick="setCalcType('caterer', this)">Commercial Caterer</button>
+                  <button type="button" class="type-chip" onclick="setCalcType('hotel', this)">5-Star Hotel</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="calculator-results">
+              <div class="calc-result-card">
+                <span class="res-num" id="res-people-fed">43,800</span>
+                <span class="res-label">Meals Served / Year</span>
+                <p class="res-desc">Nourishing verified children and senior shelters across Jaipur.</p>
+              </div>
+              <div class="calc-result-card">
+                <span class="res-num green" id="res-co2-saved">19.7 <small>tons</small></span>
+                <span class="res-label">GHG &amp; Methane Prevented</span>
+                <p class="res-desc">Equivalent to taking 4 gasoline cars off Jaipur roads permanently.</p>
+              </div>
+              <div class="calc-result-card">
+                <span class="res-num" id="res-water-saved">1.8 <small>Million L</small></span>
+                <span class="res-label">Embedded Water Conserved</span>
+                <p class="res-desc">Agricultural irrigation water saved from landfill rot.</p>
+              </div>
+              <div class="calc-result-card highlight">
+                <span class="res-num terracotta" id="res-csr-value">₹ 13.1 <small>Lakhs</small></span>
+                <span class="res-label">CSR &amp; Tax Value Salvaged</span>
+                <p class="res-desc">Good Samaritan statutory relief and transparent digital audit reports.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. Expanding City by City -->
+    <section class="section-coverage" id="coverage">
+      <div class="container">
+        
+        <div class="coverage-top-header">
+          <div>
+            <span class="section-kicker">NATIONWIDE EXPANSION</span>
+            <h2 class="section-heading">Expanding city by city.</h2>
+            <p class="section-subtext">Currently live in Jaipur, with rapid expansion and onboarding across upcoming urban clusters.</p>
+          </div>
+          
+          <div class="coverage-search-box">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="city-search" placeholder="Search your city or zone..." oninput="filterCities()">
+          </div>
+        </div>
+
+        <!-- City Chips Grid -->
+        <div class="city-chips-container" id="city-chips-grid">
+          
+          <!-- Live City -->
+          <div class="city-chip live" data-name="jaipur rajasthan">
+            <span class="city-name">Jaipur</span>
+            <span class="chip-status live">Live</span>
+          </div>
+
+          <!-- Coming Soon Cities -->
+          <div class="city-chip coming-soon" data-name="national capital region delhi ncr">
+            <span class="city-name">National Capital Region</span>
+            <span class="chip-status coming-soon">Coming soon</span>
+          </div>
+
+          <div class="city-chip coming-soon" data-name="mumbai metropolitan region">
+            <span class="city-name">Mumbai MMR</span>
+            <span class="chip-status coming-soon">Coming soon</span>
+          </div>
+
+          <div class="city-chip coming-soon" data-name="bengaluru bangalore">
+            <span class="city-name">Bengaluru Urban</span>
+            <span class="chip-status coming-soon">Coming soon</span>
+          </div>
+
+          <div class="city-chip coming-soon" data-name="hyderabad metro">
+            <span class="city-name">Hyderabad</span>
+            <span class="chip-status coming-soon">Coming soon</span>
+          </div>
+
+          <div class="city-chip coming-soon" data-name="chennai">
+            <span class="city-name">Chennai</span>
+            <span class="chip-status coming-soon">Coming soon</span>
+          </div>
+
+          <div class="city-chip coming-soon" data-name="pune">
+            <span class="city-name">Pune</span>
+            <span class="chip-status coming-soon">Coming soon</span>
+          </div>
+
+          <div class="city-chip coming-soon" data-name="ahmedabad">
+            <span class="city-name">Ahmedabad</span>
+            <span class="chip-status coming-soon">Coming soon</span>
+          </div>
+
+          <div class="city-chip coming-soon" data-name="kolkata">
+            <span class="city-name">Kolkata</span>
+            <span class="chip-status coming-soon">Coming soon</span>
+          </div>
+
+          <div class="city-chip coming-soon" data-name="lucknow">
+            <span class="city-name">Lucknow</span>
+            <span class="chip-status coming-soon">Coming soon</span>
+          </div>
+
+          <div class="city-chip coming-soon" data-name="indore">
+            <span class="city-name">Indore</span>
+            <span class="chip-status coming-soon">Coming soon</span>
+          </div>
+
+          <div class="city-chip coming-soon" data-name="kochi cochin">
+            <span class="city-name">Kochi</span>
+            <span class="chip-status coming-soon">Coming soon</span>
+          </div>
+
+          <div class="city-chip coming-soon" data-name="chandigarh tricity">
+            <span class="city-name">Chandigarh Tricity</span>
+            <span class="chip-status coming-soon">Coming soon</span>
+          </div>
+
+          <div class="city-chip coming-soon" data-name="bhubaneswar">
+            <span class="city-name">Bhubaneswar</span>
+            <span class="chip-status coming-soon">Coming soon</span>
+          </div>
+
+          <div class="city-chip coming-soon" data-name="surat">
+            <span class="city-name">Surat</span>
+            <span class="chip-status coming-soon">Coming soon</span>
+          </div>
+
+          <div class="city-chip coming-soon" data-name="visakhapatnam vizag">
+            <span class="city-name">Visakhapatnam</span>
+            <span class="chip-status coming-soon">Coming soon</span>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 7. Final CTA Banner & Minimal Footer -->
+    <section class="section-cta-banner">
+      <div class="container">
+        <div class="cta-banner-box">
+          <div class="cta-banner-content">
+            <h2 class="cta-headline">Ready to eliminate kitchen food waste?</h2>
+            <p class="cta-subhead">
+              Join thousands of responsible food donors, certified shelters, and volunteer drivers creating an India with zero food waste.
+            </p>
+            <div class="cta-banner-buttons">
+              <button type="button" class="btn btn-white btn-lg" onclick="openPostModal()">
+                <span>Post surplus food</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              </button>
+              <button type="button" class="btn btn-outline-white btn-lg" onclick="openPostModal('shelter')">
+                Register your shelter
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Minimal Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        
+        <div class="footer-brand">
+          <div class="footer-logo">
+            <div class="brand-symbol">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            </div>
+            <span class="brand-name">Sahakara</span>
+          </div>
+          <p class="footer-desc">
+            A national food rescue protocol routing commercial surplus food to shelters, volunteer drivers, and gaushalas across India.
+          </p>
+          <div class="footer-toll-free">
+            <span>24/7 National Toll-Free:</span>
+            <strong>1800 202 4490</strong>
+          </div>
+        </div>
+
+        <div class="footer-links-group">
+          <span class="footer-col-title">Platform</span>
+          <a href="#how-it-works">How it works</a>
+          <a href="#ladder">Last Resort Ladder</a>
+          <a href="#helpline">Helpline &amp; SMS</a>
+          <a href="#impact">Open Impact Data</a>
+          <a href="#coverage">Live Cities</a>
+        </div>
+
+        <div class="footer-links-group">
+          <span class="footer-col-title">Get Involved</span>
+          <a href="javascript:void(0)" onclick="openPostModal('donor')">Commercial Kitchens</a>
+          <a href="javascript:void(0)" onclick="openPostModal('shelter')">Shelter Node Registry</a>
+          <a href="javascript:void(0)" onclick="openPostModal('driver')">Volunteer Drivers</a>
+          <a href="javascript:void(0)" onclick="openPostModal('gaushala')">Gaushalas</a>
+          <a href="javascript:void(0)" onclick="openPostModal('compost')">Compost Partners</a>
+        </div>
+
+        <div class="footer-links-group">
+          <span class="footer-col-title">Compliance</span>
+          <a href="javascript:void(0)" onclick="showModalNotice('FSSAI Guidelines')">FSSAI Surplus Compliance</a>
+          <a href="javascript:void(0)" onclick="showModalNotice('Good Samaritan')">Good Samaritan Shield</a>
+          <a href="javascript:void(0)" onclick="showModalNotice('Audit Logs')">Digital Chain of Custody</a>
+          <a href="javascript:void(0)" onclick="showModalNotice('Privacy')">Data Governance</a>
+        </div>
+
+      </div>
+
+      <div class="footer-bottom-bar">
+        <p>&copy; 2026 Sahakara National Food Rescue Protocol. Public good civic infrastructure.</p>
+        <div class="footer-bottom-links">
+          <a href="#top">Back to top &uarr;</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Modal: Post Surplus Food Form -->
+  <div class="modal-backdrop" id="modal-post" role="dialog" aria-modal="true" aria-labelledby="modal-title" hidden>
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div>
+          <span class="modal-kicker">DISPATCH PROTOCOL</span>
+          <h2 id="modal-title" class="modal-heading">Post Surplus Food</h2>
+        </div>
+        <button type="button" class="modal-close-btn" onclick="closePostModal()" aria-label="Close dialog">&times;</button>
+      </div>
+
+      <form id="post-form" class="modal-form-body" onsubmit="handlePostSubmit(event)">
+        
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label for="post-donor-type" class="input-label">Donor Type <span class="req">*</span></label>
+            <select id="post-donor-type" class="custom-select" required>
+              <option value="" disabled selected>Select category</option>
+              <option value="mess">Hostel / Campus Mess</option>
+              <option value="caterer">Commercial Caterer</option>
+              <option value="banquet">Wedding / Banquet Venue</option>
+              <option value="restaurant">Restaurant / Hotel Kitchen</option>
+              <option value="corporate">Corporate Canteen</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="post-donor-name" class="input-label">Establishment Name <span class="req">*</span></label>
+            <input type="text" id="post-donor-name" class="custom-input" placeholder="e.g. Royal Orchid Banquet" required>
+          </div>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label for="post-phone" class="input-label">Phone Number (SMS OTP) <span class="req">*</span></label>
+            <input type="tel" id="post-phone" class="custom-input" placeholder="10-digit mobile number" pattern="[0-9]{10}" required>
+          </div>
+          <div class="form-group">
+            <label for="post-pincode" class="input-label">Postal PIN Code <span class="req">*</span></label>
+            <input type="text" id="post-pincode" class="custom-input" placeholder="e.g. 110016" pattern="[0-9]{6}" required>
+          </div>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label for="post-food-type" class="input-label">Food Classification <span class="req">*</span></label>
+            <select id="post-food-type" class="custom-select" required>
+              <option value="veg-meals" selected>Cooked Vegetarian Meals (Rice, Dal, Subzi, Roti)</option>
+              <option value="nonveg-meals">Cooked Non-Vegetarian Meals</option>
+              <option value="dry-bakery">Bakery / Dry Provisions</option>
+              <option value="raw-produce">Raw Grains &amp; Produce</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="post-qty" class="input-label">Quantity (Meals / Kg) <span class="req">*</span></label>
+            <input type="text" id="post-qty" class="custom-input" placeholder="e.g. 40 meals or 20 kg" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="post-deadline" class="input-label">Pickup Deadline / Safe Window <span class="req">*</span></label>
+          <input type="text" id="post-deadline" class="custom-input" placeholder="e.g. Safe hot food ready before 23:30" required>
+        </div>
+
+        <div class="form-group">
+          <label for="post-address" class="input-label">Pickup Address &amp; Gate Landmark <span class="req">*</span></label>
+          <textarea id="post-address" class="custom-textarea" rows="2" placeholder="Full street address and kitchen gate entry" required></textarea>
+        </div>
+
+        <div class="form-terms">
+          <input type="checkbox" id="post-terms" required>
+          <label for="post-terms">I confirm this surplus food is hygienically stored and unconsumed, safe for distribution.</label>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closePostModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-post">Broadcast to Nearby Shelters</button>
+        </div>
+
+      </form>
+
+      <!-- Success State -->
+      <div id="post-success" class="modal-success-state" hidden>
+        <div class="success-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0F7B5F" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <h3 class="success-heading">Dispatch Broadcast Active</h3>
+        <p class="success-paragraph">
+          Surplus reference <strong>#SK-9410</strong> has been routed to 4 nearby verified shelters. A driver will be assigned within 90 seconds.
+        </p>
+        <div class="success-details-card">
+          <div class="success-row">
+            <span>Escalation Status:</span>
+            <strong>Tier 01 (Nearby shelter &bull; 0–45 min window)</strong>
+          </div>
+          <div class="success-row">
+            <span>SMS Updates:</span>
+            <strong>Sent to your registered mobile number</strong>
+          </div>
+        </div>
+        <button type="button" class="btn btn-primary" onclick="closePostModal()">Done</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Sign In Modal -->
+  <div class="modal-backdrop" id="modal-signin" role="dialog" aria-modal="true" aria-labelledby="signin-title" hidden>
+    <div class="modal-dialog modal-dialog-sm">
+      <div class="modal-header">
+        <div>
+          <span class="modal-kicker">DISPATCH PORTAL</span>
+          <h2 id="signin-title" class="modal-heading">Partner Sign in</h2>
+        </div>
+        <button type="button" class="modal-close-btn" onclick="closeSignInModal()">&times;</button>
+      </div>
+      <form class="modal-form-body" onsubmit="handleSignInSubmit(event)">
+        <div class="form-group">
+          <label for="login-phone" class="input-label">Registered Phone Number</label>
+          <input type="tel" id="login-phone" class="custom-input" placeholder="10-digit mobile number" required>
+        </div>
+        <div class="form-group">
+          <label for="login-role" class="input-label">Node Account Type</label>
+          <select id="login-role" class="custom-select">
+            <option value="donor">Commercial Food Donor</option>
+            <option value="shelter">Verified Shelter Manager</option>
+            <option value="driver">Volunteer Driver</option>
+          </select>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeSignInModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Send Login OTP</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Notice Modal -->
+  <div class="modal-backdrop" id="modal-notice" role="dialog" aria-modal="true" aria-labelledby="notice-heading" hidden>
+    <div class="modal-dialog modal-dialog-sm">
+      <div class="modal-header">
+        <div>
+          <span class="modal-kicker">GOVERNANCE &amp; STANDARDS</span>
+          <h2 id="notice-heading" class="modal-heading">Compliance</h2>
+        </div>
+        <button type="button" class="modal-close-btn" onclick="closeNoticeModal()">&times;</button>
+      </div>
+      <div id="notice-body" class="notice-text-content"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" onclick="closeNoticeModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: FSSAI Cryptographic Rescue Certificate (Judge Demo) -->
+  <div class="modal-backdrop" id="modal-fssai-pass" role="dialog" aria-modal="true" hidden>
+    <div class="modal-dialog">
+      <div class="modal-header" style="border-bottom: 2px solid var(--border-light); padding-bottom: 12px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="brand-symbol" style="width:32px;height:32px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          </div>
+          <div>
+            <span class="modal-kicker" style="color:var(--accent-forest);font-weight:700;">DIGITAL CHAIN OF CUSTODY VERIFIED</span>
+            <h2 class="modal-heading" style="font-size:1.125rem;margin:0;">FSSAI Safe Food Rescue Certificate</h2>
+          </div>
+        </div>
+        <button type="button" class="modal-close-btn" onclick="closeFssaiPassModal()">&times;</button>
+      </div>
+
+      <div class="fssai-cert-body">
+        <div class="cert-grid-hero">
+          <div class="cert-qr-box">
+            <!-- Simulated High-Precision QR Code Graphic -->
+            <svg class="cert-qr-svg" viewBox="0 0 100 100" width="100" height="100">
+              <rect width="100" height="100" fill="#FFFFFF"/>
+              <!-- Position markers -->
+              <rect x="5" y="5" width="26" height="26" fill="#1C1917" rx="3"/>
+              <rect x="9" y="9" width="18" height="18" fill="#FFFFFF" rx="2"/>
+              <rect x="13" y="13" width="10" height="10" fill="#1C1917"/>
+              <rect x="69" y="5" width="26" height="26" fill="#1C1917" rx="3"/>
+              <rect x="73" y="9" width="18" height="18" fill="#FFFFFF" rx="2"/>
+              <rect x="77" y="13" width="10" height="10" fill="#1C1917"/>
+              <rect x="5" y="69" width="26" height="26" fill="#1C1917" rx="3"/>
+              <rect x="9" y="73" width="18" height="18" fill="#FFFFFF" rx="2"/>
+              <rect x="13" y="77" width="10" height="10" fill="#1C1917"/>
+              <!-- Pattern matrix -->
+              <rect x="36" y="8" width="6" height="6" fill="#1C1917"/>
+              <rect x="46" y="8" width="6" height="6" fill="#1C1917"/>
+              <rect x="56" y="8" width="6" height="6" fill="#1C1917"/>
+              <rect x="36" y="18" width="6" height="6" fill="#1C1917"/>
+              <rect x="48" y="22" width="8" height="6" fill="#1C1917"/>
+              <rect x="8" y="36" width="6" height="6" fill="#1C1917"/>
+              <rect x="18" y="36" width="6" height="6" fill="#1C1917"/>
+              <rect x="28" y="44" width="6" height="6" fill="#1C1917"/>
+              <rect x="38" y="36" width="24" height="24" fill="#C04A26" rx="4"/>
+              <path d="M46 48 L50 52 L54 44" stroke="#FFFFFF" stroke-width="2.5" fill="none"/>
+              <rect x="68" y="38" width="6" height="6" fill="#1C1917"/>
+              <rect x="78" y="48" width="6" height="6" fill="#1C1917"/>
+              <rect x="88" y="38" width="6" height="6" fill="#1C1917"/>
+              <rect x="36" y="68" width="6" height="6" fill="#1C1917"/>
+              <rect x="46" y="78" width="6" height="6" fill="#1C1917"/>
+              <rect x="56" y="68" width="6" height="6" fill="#1C1917"/>
+              <rect x="68" y="68" width="10" height="6" fill="#1C1917"/>
+              <rect x="82" y="78" width="10" height="10" fill="#1C1917"/>
+            </svg>
+            <span class="qr-sub">Scan to Verify</span>
+          </div>
+
+          <div class="cert-meta-details">
+            <div class="cert-row">
+              <span class="c-lbl">Batch Certificate:</span>
+              <strong class="c-val" id="cert-batch-id">#SK-8821</strong>
+            </div>
+            <div class="cert-row">
+              <span class="c-lbl">Cryptographic Hash:</span>
+              <code class="c-hash">0x9d4a...e4b1</code>
+            </div>
+            <div class="cert-row">
+              <span class="c-lbl">Origin Kitchen:</span>
+              <strong class="c-val" id="cert-donor">Amity University Mess (Jaipur)</strong>
+            </div>
+            <div class="cert-row">
+              <span class="c-lbl">Certified Shelter:</span>
+              <strong class="c-val" id="cert-shelter">Ananda Seva Ashram (Node 04)</strong>
+            </div>
+            <div class="cert-row">
+              <span class="c-lbl">Verified Carrier:</span>
+              <strong class="c-val" id="cert-driver">Driver Vikram R. (EV-4419)</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="cert-compliance-badge-row">
+          <div class="cert-pill-green">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>FSSAI Temp Compliant (&gt;60&deg;C)</span>
+          </div>
+          <div class="cert-pill-neutral">
+            <span>Good Samaritan Sec. 31 Shielded</span>
+          </div>
+          <div class="cert-pill-neutral">
+            <span>SMS OTP Verified</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="justify-content:space-between;">
+        <span style="font-size:0.75rem;color:var(--text-muted);">Timestamp: Verified 2026-09-24 &bull; Jaipur Node</span>
+        <button type="button" class="btn btn-primary btn-sm" onclick="closeFssaiPassModal()">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
