@@ -49,11 +49,22 @@ async function tryMatch(donationId) {
 
   const driver = findAvailableDriver(await getAllDrivers());
   const { error: donationError } = await db.from('donations').update({
-    status: 'matched',
+    status: driver ? 'matched' : 'awaiting_driver',
     matched_shelter_id: shelter.id,
     assigned_driver_id: driver ? driver.id : null,
   }).eq('id', donationId);
-  if (donationError) throw donationError;
+  if (donationError) {
+    const isOlderStatusConstraint = !driver && donationError.code === '23514';
+    if (!isOlderStatusConstraint) throw donationError;
+
+    const { error: fallbackError } = await db.from('donations').update({
+      status: 'unmatched',
+      matched_shelter_id: null,
+      assigned_driver_id: null,
+    }).eq('id', donationId);
+    if (fallbackError) throw fallbackError;
+    return getDonation(donationId);
+  }
 
   if (driver) {
     const { error } = await db.from('drivers').update({ available: false }).eq('id', driver.id);
@@ -83,6 +94,15 @@ async function createDonation({ donorId, donorName, foodType, quantity, expiryHo
   });
   if (error) throw error;
   return tryMatch(id);
+}
+
+async function retryMatch(donationId) {
+  const donation = await getDonation(donationId);
+  if (!donation) throw new Error('Donation not found');
+  if (!['unmatched', 'awaiting_driver'].includes(donation.status)) {
+    throw new Error('Only unmatched donations can be retried');
+  }
+  return tryMatch(donationId);
 }
 
 async function declineMatch(donationId) {
@@ -175,6 +195,7 @@ module.exports = {
   getAllDonations,
   getDonation,
   createDonation,
+  retryMatch,
   declineMatch,
   markPickedUp,
   markDelivered,
