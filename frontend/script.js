@@ -1254,9 +1254,8 @@ async function handlePostSubmit(e) {
   const donorName = document.getElementById('post-donor-name').value || 'Amity Jaipur Food Partner';
   const phone = document.getElementById('post-phone').value || '+91 98290 12345';
   const pincode = document.getElementById('post-pincode').value || '302001';
-  const foodType = document.getElementById('post-food-type').value || 'Hot Cooked Meals';
+  const foodType = document.getElementById('post-food-category').value || 'cooked rice/dal';
   const quantity = document.getElementById('post-qty').value || '50 meals';
-  const deadline = document.getElementById('post-deadline').value || '2 hours';
   const address = document.getElementById('post-address').value || 'Jaipur City Hub';
 
   if (!authState.token || authState.user?.role !== 'donor') {
@@ -1265,7 +1264,7 @@ async function handlePostSubmit(e) {
   }
 
   const mealCount = parseInt(quantity, 10) || 50;
-  const expiryHours = Math.max(2, Math.min(6, parseInt(deadline, 10) || 4));
+  const expiryHours = foodType === 'dairy' ? 2 : foodType === 'dry snacks' ? 6 : 4;
 
   submitBtn.textContent = 'Broadcasting to Jaipur Node Cluster...';
   submitBtn.disabled = true;
