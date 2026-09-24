@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const donationService = require('../donationService');
 const { ZONES } = require('../matching');
+const { authenticateToken, requireRole } = require('./auth');
 
 // GET /api/donations - list all
 router.get('/', async (req, res, next) => {
@@ -13,7 +14,7 @@ router.get('/', async (req, res, next) => {
 });
 
 // POST /api/donations - post a new surplus donation, auto-match it
-router.post('/', async (req, res, next) => {
+router.post('/', authenticateToken, requireRole('donor'), async (req, res, next) => {
   const { donorName, foodType, quantity, expiryHours, zone } = req.body;
 
   if (!donorName || !foodType || !quantity || !zone) {
@@ -62,7 +63,7 @@ router.get('/:id', async (req, res, next) => {
 });
 
 // PATCH /api/donations/:id/decline - shelter declines a matched donation
-router.patch('/:id/decline', async (req, res) => {
+router.patch('/:id/decline', authenticateToken, requireRole('shelter'), async (req, res) => {
   try {
     res.json(await donationService.declineMatch(req.params.id));
   } catch (err) {
@@ -71,7 +72,7 @@ router.patch('/:id/decline', async (req, res) => {
 });
 
 // PATCH /api/donations/:id/pickup - driver marks picked up
-router.patch('/:id/pickup', async (req, res) => {
+router.patch('/:id/pickup', authenticateToken, requireRole('driver'), async (req, res) => {
   try {
     res.json(await donationService.markPickedUp(req.params.id));
   } catch (err) {
@@ -80,7 +81,7 @@ router.patch('/:id/pickup', async (req, res) => {
 });
 
 // PATCH /api/donations/:id/deliver - driver marks delivered
-router.patch('/:id/deliver', async (req, res) => {
+router.patch('/:id/deliver', authenticateToken, requireRole('driver'), async (req, res) => {
   try {
     res.json(await donationService.markDelivered(req.params.id));
   } catch (err) {

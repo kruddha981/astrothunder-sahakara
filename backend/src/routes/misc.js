@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const donationService = require('../donationService');
+const { authenticateToken, requireRole } = require('./auth');
 
 // GET /api/shelters
 router.get('/shelters', async (req, res, next) => {
@@ -12,7 +13,7 @@ router.get('/shelters', async (req, res, next) => {
 });
 
 // PATCH /api/shelters/:id/toggle - flip a shelter's accepting status
-router.patch('/shelters/:id/toggle', async (req, res) => {
+router.patch('/shelters/:id/toggle', authenticateToken, requireRole('shelter'), async (req, res) => {
   try {
     res.json(await donationService.toggleShelterAccepting(req.params.id));
   } catch (err) {

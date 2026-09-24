@@ -734,7 +734,7 @@ function closePostModal() {
   document.body.style.overflow = '';
 }
 
-function handlePostSubmit(e) {
+async function handlePostSubmit(e) {
   e.preventDefault();
   const form = document.getElementById('post-form');
   const success = document.getElementById('post-success');
@@ -749,8 +749,43 @@ function handlePostSubmit(e) {
   const deadline = document.getElementById('post-deadline').value || '2 hours';
   const address = document.getElementById('post-address').value || 'Jaipur City Hub';
 
+  if (!authState.token || authState.user?.role !== 'donor') {
+    openSignInModal();
+    return;
+  }
+
+  const mealCount = parseInt(quantity, 10) || 50;
+  const expiryHours = Math.max(2, Math.min(6, parseInt(deadline, 10) || 4));
+
   submitBtn.textContent = 'Broadcasting to Jaipur Node Cluster...';
   submitBtn.disabled = true;
+
+  let donation;
+  try {
+    const response = await fetch('http://localhost:3001/api/donations', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authState.token}`,
+      },
+      body: JSON.stringify({
+        donorName,
+        foodType,
+        quantity: mealCount,
+        expiryHours,
+        zone: 'Downtown',
+      }),
+    });
+
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || 'Unable to post donation');
+    donation = payload;
+  } catch (error) {
+    submitBtn.textContent = 'Broadcast to Nearby Shelters';
+    submitBtn.disabled = false;
+    alert(error.message);
+    return;
+  }
 
   setTimeout(() => {
     submitBtn.textContent = 'Broadcast to Nearby Shelters';
@@ -783,21 +818,20 @@ function handlePostSubmit(e) {
       renderMapData();
     } else {
       // Surplus Food Posting
-      const newTrackingId = `SK-${Math.floor(1000 + Math.random() * 9000)}`;
-      const mealCount = parseInt(quantity, 10) || 50;
+      const newTrackingId = donation.id;
 
       const newDispatch = {
         tracking_id: newTrackingId,
-        donor_name: donorName,
+        donor_name: donation.donor_name,
         food_title: `${quantity} ${foodType}`,
         quantity,
         meals_count: mealCount,
         temp_celsius: 65,
-        status: 'matched',
+        status: donation.status,
         pickup_address: address,
-        assigned_shelter: 'Ananda Seva Ashram (Node 04)',
+        assigned_shelter: donation.matched_shelter_id || 'Awaiting shelter match',
         shelter_distance_km: 2.1,
-        assigned_driver: 'Driver Vikram R. (EV Cargo-4419)',
+        assigned_driver: donation.assigned_driver_id || 'Awaiting driver assignment',
         driver_eta_mins: 18,
         otp_code: `${Math.floor(1000 + Math.random() * 9000)}`
       };

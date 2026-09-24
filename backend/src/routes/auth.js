@@ -53,6 +53,15 @@ function authenticateToken(req, res, next) {
   });
 }
 
+function requireRole(...roles) {
+  return (req, res, next) => {
+    if (!req.user || !roles.includes(req.user.role)) {
+      return res.status(403).json({ ok: false, error: 'This action is not allowed for your role' });
+    }
+    next();
+  };
+}
+
 router.post('/send-otp', async (req, res) => {
   try {
     const { email, purpose = 'signup', name, role, organization } = req.body;
@@ -203,4 +212,4 @@ router.get('/demo-personas', (req, res) => {
   ] });
 });
 
-module.exports = { router, initializeAuth: ensureDemoUsers };
+module.exports = { router, initializeAuth: ensureDemoUsers, authenticateToken, requireRole };
