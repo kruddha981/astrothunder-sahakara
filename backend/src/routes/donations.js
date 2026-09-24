@@ -63,6 +63,15 @@ router.get('/:id', async (req, res, next) => {
   }
 });
 
+// PATCH /api/donations/:id/retry - retry matching after capacity or driver availability changes
+router.patch('/:id/retry', authenticateToken, requireRole('donor'), async (req, res) => {
+  try {
+    res.json(await donationService.retryMatch(req.params.id));
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 // PATCH /api/donations/:id/decline - shelter declines a matched donation
 router.patch('/:id/decline', authenticateToken, requireRole('shelter'), async (req, res) => {
   try {
