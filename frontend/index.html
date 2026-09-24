@@ -13,9 +13,9 @@
   
   <link rel="stylesheet" href="styles.css">
   
-  <!-- Leaflet.js for Interactive Real-Time Jaipur Map -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <!-- Leaflet.js for Interactive Real-Time Jaipur Map (Local Vendor) -->
+  <link rel="stylesheet" href="vendor/leaflet.css" />
+  <script src="vendor/leaflet.js"></script>
 </head>
 <body>
 
@@ -134,13 +134,13 @@
                 
                 <div class="live-card-header">
                   <div class="donor-details">
-                    <span class="card-kicker">ACTIVE RESCUE BATCH #SK-8821</span>
-                    <h3 class="food-title">40 plates veg pulao, safe for 3 hrs</h3>
-                    <p class="donor-source">Posted by <strong>Grand Orchid Banquet &amp; Dining</strong> &bull; Kitchen Dock Gate 2</p>
+                    <span class="card-kicker" id="card-kicker">ZERO-LANDFILL RESCUE PROTOCOL</span>
+                    <h3 class="food-title" id="card-food-title">Ready for Surplus Food Postings</h3>
+                    <p class="donor-source" id="card-donor-name">Click <strong>"Post surplus food"</strong> above to launch a live rescue match</p>
                   </div>
                   <div class="temp-badge">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>
-                    <span>64&deg;C Safe Temp</span>
+                    <span id="card-temp-label">64&deg;C Safe Temp</span>
                   </div>
                 </div>
 
@@ -151,34 +151,30 @@
                   </div>
                   
                   <div class="stepper-steps">
-                    <div class="step-node completed">
-                      <div class="step-circle">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-                      </div>
-                      <span class="step-label">Posted</span>
-                      <span class="step-time">22:12</span>
-                    </div>
-
-                    <div class="step-node completed">
-                      <div class="step-circle">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-                      </div>
-                      <span class="step-label">Matched</span>
-                      <span class="step-time">22:13</span>
-                    </div>
-
                     <div class="step-node active">
                       <div class="step-circle current">
                         <span class="active-dot"></span>
                       </div>
+                      <span class="step-label">Posted</span>
+                      <span class="step-time">Live</span>
+                    </div>
+
+                    <div class="step-node">
+                      <div class="step-circle"></div>
+                      <span class="step-label">Matched</span>
+                      <span class="step-time">Ladder Tier</span>
+                    </div>
+
+                    <div class="step-node">
+                      <div class="step-circle"></div>
                       <span class="step-label">Picked up</span>
-                      <span class="step-time">22:24</span>
+                      <span class="step-time">OTP Verified</span>
                     </div>
 
                     <div class="step-node">
                       <div class="step-circle"></div>
                       <span class="step-label">Delivered</span>
-                      <span class="step-time">ETA 22:42</span>
+                      <span class="step-time">Shelter Intake</span>
                     </div>
                   </div>
                 </div>
@@ -190,9 +186,9 @@
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
                     </div>
                     <div>
-                      <span class="meta-title">Matched Shelter</span>
-                      <strong class="meta-value">Ananda Seva Ashram (Node 04)</strong>
-                      <span class="meta-sub">2.4 km away &bull; Capacity confirmed for 50 meals</span>
+                      <span class="meta-title">Target Rescue Node</span>
+                      <strong class="meta-value" id="card-destination">Nearest Verified Shelter</strong>
+                      <span class="meta-sub" id="card-destination-sub">Dynamic 4-Tier Ladder of Last Resort</span>
                     </div>
                   </div>
 
@@ -202,9 +198,24 @@
                     </div>
                     <div>
                       <span class="meta-title">Assigned Driver</span>
-                      <strong class="meta-value">Driver Vikram R. (EV-Carrier)</strong>
-                      <span class="meta-sub">Arriving at shelter in 14 mins &bull; OTP: 4419</span>
+                      <strong class="meta-value" id="card-driver-name">Volunteer Carrier Network</strong>
+                      <span class="meta-sub" id="card-driver-sub">Realtime dispatch &bull; Handover OTP: <strong id="card-otp-code" style="color:var(--brand-green);font-family:var(--font-mono);">----</strong></span>
                     </div>
+                  </div>
+                </div>
+
+                <!-- Driver Live Actions (Supabase Realtime Sync) -->
+                <div class="driver-live-actions" id="driver-actions-bar">
+                  <span class="driver-actions-label">🛵 Driver Realtime Actions:</span>
+                  <div class="driver-btn-group">
+                    <button type="button" class="btn-action-pickup" id="btn-driver-pickup" onclick="triggerDriverPickup()">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                      <span>1. Confirm Picked Up (Enter OTP)</span>
+                    </button>
+                    <button type="button" class="btn-action-deliver" id="btn-driver-deliver" onclick="triggerDriverDelivery()">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                      <span>2. Confirm Delivered</span>
+                    </button>
                   </div>
                 </div>
 
@@ -225,7 +236,7 @@
           
           <div class="stat-card">
             <div class="stat-number-wrap">
-              <span class="stat-number" id="stat-meals-count">1,482,930</span>
+              <span class="stat-number" id="stat-meals-count">0</span>
             </div>
             <div class="stat-title">Meals rescued</div>
             <div class="stat-desc">Wholesome prepared food delivered directly to certified shelters.</div>
@@ -233,7 +244,7 @@
 
           <div class="stat-card">
             <div class="stat-number-wrap">
-              <span class="stat-number" id="stat-kg-count">593,170</span>
+              <span class="stat-number" id="stat-kg-count">0</span>
               <span class="stat-unit">kg</span>
             </div>
             <div class="stat-title">Kg diverted from landfill</div>
@@ -242,16 +253,16 @@
 
           <div class="stat-card">
             <div class="stat-number-wrap">
-              <span class="stat-number">1</span>
-              <span class="stat-unit">city live</span>
+              <span class="stat-number" id="stat-cities-count">3</span>
+              <span class="stat-unit">cities live</span>
             </div>
-            <div class="stat-title">Live in Jaipur</div>
-            <div class="stat-desc">Active localized volunteer dispatch cluster with upcoming national rollout.</div>
+            <div class="stat-title" id="stat-cities-title">Live in Jaipur, Delhi, BLR</div>
+            <div class="stat-desc">Active localized volunteer dispatch clusters with upcoming national rollout.</div>
           </div>
 
           <div class="stat-card stat-zero">
             <div class="stat-number-wrap">
-              <span class="stat-number highlight-zero">0</span>
+              <span class="stat-number highlight-zero" id="stat-dumpster-count">0</span>
             </div>
             <div class="stat-title">Dumpster: 0</div>
             <div class="stat-desc">Strict zero-landfill threshold via our 4-tier Last Resort Ladder.</div>
@@ -463,23 +474,26 @@
             </div>
           </div>
 
-          <!-- Card C: Works Without a Smartphone (Left 4 cols / bottom) -->
+          <!-- Card C: Works Without a Smartphone (Interactive IVR Dialpad & SMS Simulator) -->
           <div class="bento-card bento-span-6" id="helpline">
             <div class="bento-card-header">
               <div class="bento-icon">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
               </div>
               <div class="bento-text">
-                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;">
                   <h3 class="bento-title">Works without a smartphone</h3>
-                  <span class="live-radar-badge" style="font-size:0.625rem;">IVR &amp; SMS ENGINE</span>
+                  <div class="helpline-mode-tabs">
+                    <button type="button" class="mode-tab active" id="tab-btn-sms" onclick="switchHelplineMode('sms')">SMS 56161</button>
+                    <button type="button" class="mode-tab" id="tab-btn-ivr" onclick="switchHelplineMode('ivr')">IVR Dialpad (1800-202-4490)</button>
+                  </div>
                 </div>
-                <p class="bento-sub">Designed for ground-reality kitchen staff via toll-free voice and simple SMS shortcodes.</p>
+                <p class="bento-sub">Ground-reality kitchen staff can dispatch food via toll-free voice IVR or quick SMS shortcodes.</p>
               </div>
             </div>
 
-            <div class="phone-sms-mockup">
-              <!-- Toll Free Call Banner -->
+            <!-- MODE 1: SMS Simulation -->
+            <div class="phone-sms-mockup" id="helpline-sms-panel">
               <div class="helpline-badge-row">
                 <div class="badge-helpline-icon">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
@@ -490,7 +504,6 @@
                 </div>
               </div>
 
-              <!-- SMS Exchange Simulation Container -->
               <div class="sms-exchange-box" id="sms-exchange-container">
                 <div class="sms-line donor-sms">
                   <span class="sms-sender">MESS SUPERVISOR &bull; SMS to 56161</span>
@@ -502,100 +515,103 @@
                 </div>
               </div>
 
-              <!-- Interactive SMS Tester for Judges -->
               <div class="sms-test-controls">
-                <span class="sms-quick-label">⚡ Live SMS Simulator (Test Instant Dispatch):</span>
+                <span class="sms-quick-label">⚡ Live SMS Simulator (Inserts real donation to Supabase):</span>
                 <div class="sms-quick-buttons">
-                  <button type="button" class="sms-quick-btn" onclick="simulateSmsPreset('amity')">🍱 Amity Mess 50 Meals</button>
-                  <button type="button" class="sms-quick-btn" onclick="simulateSmsPreset('banquet')">🎉 Banquet 100 Portions</button>
-                  <button type="button" class="sms-quick-btn" onclick="simulateSmsPreset('accept')">⚡ Driver ACCEPT</button>
+                  <button type="button" class="sms-quick-btn" onclick="simulateSmsPreset('amity')">🍱 Amity Mess (50 Meals)</button>
+                  <button type="button" class="sms-quick-btn" onclick="simulateSmsPreset('banquet')">🎉 Royal Banquet (100 Portions)</button>
+                  <button type="button" class="sms-quick-btn" onclick="simulateSmsPreset('bakery')">🥖 C-Scheme Bakery (30 Packs)</button>
                 </div>
               </div>
             </div>
+
+            <!-- MODE 2: IVR Interactive Dial-Pad Simulator -->
+            <div class="ivr-keypad-mockup" id="helpline-ivr-panel" style="display:none;">
+              <div class="ivr-screen">
+                <div class="ivr-screen-header">
+                  <span class="ivr-live-dot">●</span> <span>CALL CONNECTED: 1800 202 4490</span>
+                </div>
+                <div class="ivr-prompt" id="ivr-voice-prompt">
+                  "Namaste! Press <strong>1</strong> to broadcast surplus food rescue."
+                </div>
+                <div class="ivr-input-display" id="ivr-entered-keys">&nbsp;</div>
+              </div>
+
+              <!-- Phone Keypad Grid -->
+              <div class="ivr-keypad-grid">
+                <button type="button" class="key-btn" onclick="pressIvrKey('1')"><span>1</span><small></small></button>
+                <button type="button" class="key-btn" onclick="pressIvrKey('2')"><span>2</span><small>ABC</small></button>
+                <button type="button" class="key-btn" onclick="pressIvrKey('3')"><span>3</span><small>DEF</small></button>
+                <button type="button" class="key-btn" onclick="pressIvrKey('4')"><span>4</span><small>GHI</small></button>
+                <button type="button" class="key-btn" onclick="pressIvrKey('5')"><span>5</span><small>JKL</small></button>
+                <button type="button" class="key-btn" onclick="pressIvrKey('6')"><span>6</span><small>MNO</small></button>
+                <button type="button" class="key-btn" onclick="pressIvrKey('7')"><span>7</span><small>PQRS</small></button>
+                <button type="button" class="key-btn" onclick="pressIvrKey('8')"><span>8</span><small>TUV</small></button>
+                <button type="button" class="key-btn" onclick="pressIvrKey('9')"><span>9</span><small>WXYZ</small></button>
+                <button type="button" class="key-btn" onclick="pressIvrKey('*')"><span>*</span><small>CLR</small></button>
+                <button type="button" class="key-btn" onclick="pressIvrKey('0')"><span>0</span><small>+</small></button>
+                <button type="button" class="key-btn special-hash" onclick="pressIvrKey('#')"><span>#</span><small>ENTER</small></button>
+              </div>
+
+              <div class="ivr-footer-controls">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="resetIvrCall()">Restart Call</button>
+                <span class="ivr-step-badge" id="ivr-step-badge">Step 1/4</span>
+              </div>
+            </div>
+
           </div>
 
-          <!-- Card D: Live Impact with Bar Chart (Right 6 cols / bottom) -->
+          <!-- Card D: Live Impact & Realtime Rescue Audit Log (Right 6 cols / bottom) -->
           <div class="bento-card bento-span-6">
             <div class="bento-card-header">
               <div class="bento-icon">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
               </div>
               <div class="bento-text">
-                <h3 class="bento-title">Real-time rescue impact</h3>
-                <p class="bento-sub">Consistent 99.4% distribution success rate with transparent audit trails.</p>
+                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;">
+                  <h3 class="bento-title">Realtime rescue telemetry</h3>
+                  <span class="live-radar-badge" style="font-size:0.625rem;"><span class="live-pulse"></span> SUPABASE REALTIME</span>
+                </div>
+                <p class="bento-sub">Continuous distribution log synced live across all donor, driver, and shelter devices.</p>
               </div>
             </div>
 
-            <!-- Vector SVG Bar Chart -->
-            <div class="impact-chart-box">
-              <div class="chart-legend-row">
-                <div class="legend-item">
-                  <span class="legend-dot green"></span>
-                  <span>Human Shelters (84%)</span>
-                </div>
-                <div class="legend-item">
-                  <span class="legend-dot light-green"></span>
-                  <span>Gaushalas (13%)</span>
-                </div>
-                <div class="legend-item">
-                  <span class="legend-dot grey"></span>
-                  <span>Compost (3%)</span>
-                </div>
-                <div class="legend-item zero">
-                  <span class="legend-dot red-zero"></span>
-                  <span>Dumpster (0%)</span>
-                </div>
+            <!-- Realtime Recent Donations Audit Table -->
+            <div class="realtime-log-container">
+              <div class="log-table-wrapper">
+                <table class="live-donations-table">
+                  <thead>
+                    <tr>
+                      <th>Source</th>
+                      <th>Food &amp; Qty</th>
+                      <th>Stage</th>
+                      <th>Status</th>
+                      <th>Matched Recipient</th>
+                      <th>OTP</th>
+                    </tr>
+                  </thead>
+                  <tbody id="realtime-donations-tbody">
+                    <!-- Dynamic rows rendered from Supabase -->
+                    <tr>
+                      <td><span class="source-badge web">Web</span></td>
+                      <td><strong>40 Meals</strong> (Hot Dal &amp; Rice)</td>
+                      <td><span class="stage-tag s1">Tier 1</span></td>
+                      <td><span class="status-pill picked-up">Picked up</span></td>
+                      <td>Ananda Seva Ashram</td>
+                      <td><code>4419</code></td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
+            </div>
 
-              <!-- Bar Graphic -->
-              <div class="bar-chart-visual">
-                <div class="chart-col">
-                  <div class="bar-container">
-                    <div class="bar-fill green" style="height: 65%;"></div>
-                  </div>
-                  <span class="bar-label">Mon</span>
-                </div>
-                <div class="chart-col">
-                  <div class="bar-container">
-                    <div class="bar-fill green" style="height: 78%;"></div>
-                  </div>
-                  <span class="bar-label">Tue</span>
-                </div>
-                <div class="chart-col">
-                  <div class="bar-container">
-                    <div class="bar-fill green" style="height: 85%;"></div>
-                  </div>
-                  <span class="bar-label">Wed</span>
-                </div>
-                <div class="chart-col">
-                  <div class="bar-container">
-                    <div class="bar-fill green" style="height: 92%;"></div>
-                  </div>
-                  <span class="bar-label">Thu</span>
-                </div>
-                <div class="chart-col">
-                  <div class="bar-container">
-                    <div class="bar-fill green" style="height: 96%;"></div>
-                  </div>
-                  <span class="bar-label">Fri</span>
-                </div>
-                <div class="chart-col">
-                  <div class="bar-container">
-                    <div class="bar-fill green" style="height: 100%;"></div>
-                  </div>
-                  <span class="bar-label">Sat</span>
-                </div>
-                <div class="chart-col">
-                  <div class="bar-container">
-                    <div class="bar-fill green" style="height: 94%;"></div>
-                  </div>
-                  <span class="bar-label">Sun</span>
-                </div>
-              </div>
-
-              <div class="chart-footer-metric">
-                <strong>Average dispatch response latency:</strong>
-                <span>88 seconds from post to volunteer driver accept</span>
+            <!-- Metrics bar -->
+            <div class="impact-chart-box" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border-light);">
+              <div class="chart-legend-row" style="margin-bottom:0;">
+                <div class="legend-item"><span class="legend-dot green"></span><span>Shelters (84%)</span></div>
+                <div class="legend-item"><span class="legend-dot light-green"></span><span>Gaushalas (13%)</span></div>
+                <div class="legend-item"><span class="legend-dot grey"></span><span>Compost (3%)</span></div>
+                <div class="legend-item zero"><span class="legend-dot red-zero"></span><span>Dumpster (0%)</span></div>
               </div>
             </div>
           </div>
@@ -897,6 +913,7 @@
           <a href="#helpline">Helpline &amp; SMS</a>
           <a href="#impact">Open Impact Data</a>
           <a href="#coverage">Live Cities</a>
+          <a href="admin/index.html" style="color:var(--brand-green);font-weight:600;">Admin Control Center &rarr;</a>
         </div>
 
         <div class="footer-links-group">
@@ -942,67 +959,66 @@
         
         <div class="form-grid-2">
           <div class="form-group">
-            <label for="post-donor-type" class="input-label">Donor Type <span class="req">*</span></label>
+            <label for="post-donor-type" class="input-label">Donor Category <span class="req">*</span></label>
             <select id="post-donor-type" class="custom-select" required>
-              <option value="" disabled selected>Select category</option>
-              <option value="mess">Hostel / Campus Mess</option>
-              <option value="caterer">Commercial Caterer</option>
-              <option value="banquet">Wedding / Banquet Venue</option>
-              <option value="restaurant">Restaurant / Hotel Kitchen</option>
-              <option value="corporate">Corporate Canteen</option>
+              <option value="Mess" selected>Hostel / Campus Mess</option>
+              <option value="Restaurant">Restaurant / Commercial Kitchen</option>
+              <option value="Wedding">Wedding / Banquet Venue</option>
+              <option value="Market">Retail / Food Market</option>
             </select>
           </div>
           <div class="form-group">
             <label for="post-donor-name" class="input-label">Establishment Name <span class="req">*</span></label>
-            <input type="text" id="post-donor-name" class="custom-input" placeholder="e.g. Royal Orchid Banquet" required>
+            <input type="text" id="post-donor-name" class="custom-input" placeholder="e.g. Amity Campus Mess" value="Amity University Central Mess" required>
           </div>
         </div>
 
         <div class="form-grid-2">
           <div class="form-group">
-            <label for="post-phone" class="input-label">Phone Number (SMS OTP) <span class="req">*</span></label>
-            <input type="tel" id="post-phone" class="custom-input" placeholder="10-digit mobile number" pattern="[0-9]{10}" required>
-          </div>
-          <div class="form-group">
-            <label for="post-pincode" class="input-label">Postal PIN Code <span class="req">*</span></label>
-            <input type="text" id="post-pincode" class="custom-input" placeholder="e.g. 110016" pattern="[0-9]{6}" required>
-          </div>
-        </div>
-
-        <div class="form-grid-2">
-          <div class="form-group">
-            <label for="post-food-type" class="input-label">Food Classification <span class="req">*</span></label>
-            <select id="post-food-type" class="custom-select" required>
-              <option value="veg-meals" selected>Cooked Vegetarian Meals (Rice, Dal, Subzi, Roti)</option>
-              <option value="nonveg-meals">Cooked Non-Vegetarian Meals</option>
-              <option value="dry-bakery">Bakery / Dry Provisions</option>
-              <option value="raw-produce">Raw Grains &amp; Produce</option>
+            <label for="post-city" class="input-label">Cluster City <span class="req">*</span></label>
+            <select id="post-city" class="custom-select" required>
+              <option value="Jaipur" selected>Jaipur</option>
+              <option value="Delhi NCR">Delhi NCR</option>
+              <option value="Bengaluru">Bengaluru</option>
             </select>
           </div>
           <div class="form-group">
-            <label for="post-qty" class="input-label">Quantity (Meals / Kg) <span class="req">*</span></label>
-            <input type="text" id="post-qty" class="custom-input" placeholder="e.g. 40 meals or 20 kg" required>
+            <label for="post-food-category" class="input-label">Food Classification (Safety Clock) <span class="req">*</span></label>
+            <select id="post-food-category" class="custom-select" required onchange="updateSafetyClockHint(this.value)">
+              <option value="cooked rice/dal" selected>Cooked Rice / Dal (4h Safe Window)</option>
+              <option value="dairy">Dairy / Paneer / Desserts (2h Safe Window)</option>
+              <option value="dry snacks">Dry Bakery &amp; Snacks (24h Safe Window)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label for="post-food-desc" class="input-label">Food Description <span class="req">*</span></label>
+            <input type="text" id="post-food-desc" class="custom-input" placeholder="e.g. 50 Hot Dinner Meals (Rice, Dal Makhani &amp; Roti)" value="50 Hot Dinner Meals (Rice, Dal Makhani &amp; Roti)" required>
+          </div>
+          <div class="form-group">
+            <label for="post-qty" class="input-label">Quantity (Meals / Plates) <span class="req">*</span></label>
+            <input type="number" id="post-qty" class="custom-input" placeholder="e.g. 50" value="50" min="1" max="5000" required>
           </div>
         </div>
 
         <div class="form-group">
-          <label for="post-deadline" class="input-label">Pickup Deadline / Safe Window <span class="req">*</span></label>
-          <input type="text" id="post-deadline" class="custom-input" placeholder="e.g. Safe hot food ready before 23:30" required>
-        </div>
-
-        <div class="form-group">
-          <label for="post-address" class="input-label">Pickup Address &amp; Gate Landmark <span class="req">*</span></label>
-          <textarea id="post-address" class="custom-textarea" rows="2" placeholder="Full street address and kitchen gate entry" required></textarea>
+          <label for="post-address" class="input-label">Pickup Address &amp; Landmark <span class="req">*</span></label>
+          <textarea id="post-address" class="custom-textarea" rows="2" placeholder="Full street address and kitchen gate entry" required>SP-1, Kant Kalwar, RIICO Industrial Area, NH-11C, Jaipur 303002</textarea>
         </div>
 
         <div class="form-terms">
-          <input type="checkbox" id="post-terms" required>
+          <input type="checkbox" id="post-terms" checked required>
           <label for="post-terms">I confirm this surplus food is hygienically stored and unconsumed, safe for distribution.</label>
         </div>
 
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" onclick="closePostModal()">Cancel</button>
-          <button type="submit" class="btn btn-primary" id="btn-submit-post">Broadcast to Nearby Shelters</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-post">
+            <span>Broadcast to Rescue Network</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </button>
         </div>
 
       </form>
@@ -1014,19 +1030,23 @@
         </div>
         <h3 class="success-heading">Dispatch Broadcast Active</h3>
         <p class="success-paragraph">
-          Surplus reference <strong>#SK-9410</strong> has been routed to 4 nearby verified shelters. A driver will be assigned within 90 seconds.
+          Donation batch <strong id="success-ref-id">#SK-9410</strong> has been inserted into Supabase Postgres and matched in real-time.
         </p>
         <div class="success-details-card">
           <div class="success-row">
-            <span>Escalation Status:</span>
-            <strong>Tier 01 (Nearby shelter &bull; 0–45 min window)</strong>
+            <span>Handover OTP (Show to Driver):</span>
+            <strong style="font-family:var(--font-mono);font-size:1.25rem;color:var(--brand-green);letter-spacing:2px;" id="success-otp-code">4419</strong>
           </div>
           <div class="success-row">
-            <span>SMS Updates:</span>
-            <strong>Sent to your registered mobile number</strong>
+            <span>Matched Recipient:</span>
+            <strong id="success-matched-recipient">Ananda Seva Ashram (Node 04)</strong>
+          </div>
+          <div class="success-row">
+            <span>Ladder Escalation Tier:</span>
+            <strong id="success-ladder-tier">Tier 01 (Nearby shelter &bull; 0–45 min window)</strong>
           </div>
         </div>
-        <button type="button" class="btn btn-primary" onclick="closePostModal()">Done</button>
+        <button type="button" class="btn btn-primary" onclick="closePostModal()">View Live Dispatch</button>
       </div>
 
     </div>
@@ -1387,6 +1407,10 @@
     </div>
   </div>
 
-  <script src="script.js"></script>
+  <!-- Supabase JS SDK, Configurations & Matching Engine (Local Vendor) -->
+  <script src="vendor/supabase.js?v=2.0.1"></script>
+  <script src="config.js?v=2.0.1"></script>
+  <script src="matching.js?v=2.0.1"></script>
+  <script src="script.js?v=2.0.1"></script>
 </body>
 </html>

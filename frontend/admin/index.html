@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard — Sahakara Control Center</title>
+  <meta name="description" content="National administration, ladder monitor, and telemetry portal for the Sahakara Food Rescue Platform.">
+
+  <!-- Inter & JetBrains Mono Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <!-- Core & Admin Stylesheets -->
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../vendor/leaflet.css">
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body class="admin-body">
+
+  <!-- Sidebar Navigation -->
+  <aside class="admin-sidebar" id="admin-sidebar">
+    <div class="admin-sidebar-header">
+      <a href="../index.html" class="admin-sidebar-brand">
+        <div class="brand-symbol">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+        <strong style="font-size:1.125rem;letter-spacing:-0.5px;">Sahakara</strong>
+      </a>
+      <span style="font-size:0.6875rem;background:#1E293B;padding:2px 6px;border-radius:4px;color:#34D399;font-weight:700;">ADMIN</span>
+    </div>
+
+    <nav class="admin-nav-menu">
+      <span class="nav-section-title">Telemetry &amp; Monitor</span>
+      <button type="button" class="admin-nav-link active" onclick="switchAdminTab('overview', this)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        <span>Overview</span>
+      </button>
+
+      <button type="button" class="admin-nav-link" onclick="switchAdminTab('donations', this)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span>Live Donations</span>
+        <span class="badge-counter" id="badge-active-donations">0</span>
+      </button>
+
+      <button type="button" class="admin-nav-link" onclick="switchAdminTab('ladder', this)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        <span>Ladder Monitor</span>
+      </button>
+
+      <span class="nav-section-title">Operations &amp; Network</span>
+      <button type="button" class="admin-nav-link" onclick="switchAdminTab('recipients', this)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span>Recipients Nodes</span>
+      </button>
+
+      <button type="button" class="admin-nav-link" onclick="switchAdminTab('verification', this)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        <span>Verification Queue</span>
+        <span class="badge-counter" id="badge-pending-verifications" style="background:#F59E0B;">0</span>
+      </button>
+
+      <button type="button" class="admin-nav-link" onclick="switchAdminTab('cities', this)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+        <span>Cities &amp; Coverage</span>
+      </button>
+
+      <span class="nav-section-title">Compliance &amp; Reports</span>
+      <button type="button" class="admin-nav-link" onclick="switchAdminTab('reports', this)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        <span>Reports &amp; Certificates</span>
+      </button>
+
+      <button type="button" class="admin-nav-link" onclick="switchAdminTab('audit', this)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        <span>Audit Log</span>
+      </button>
+    </nav>
+
+    <div class="admin-sidebar-footer">
+      <div class="admin-user-info">
+        <span class="admin-user-name" id="sidebar-admin-name">Admin Lead</span>
+        <span class="admin-user-role" id="sidebar-admin-email">admin@sahakara.org</span>
+      </div>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="adminLogout()" title="Sign out" style="color:#94A3B8;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Content Layout -->
+  <div class="admin-main-wrapper">
+    
+    <!-- Header -->
+    <header class="admin-top-header">
+      <div class="admin-page-title-row">
+        <h1 class="admin-page-title" id="page-heading-title">Logistics Overview</h1>
+        <div class="live-realtime-badge">
+          <span class="pulse-dot"></span>
+          <span>SUPABASE REALTIME ACTIVE</span>
+        </div>
+      </div>
+
+      <div class="admin-header-actions">
+        <!-- Notification Bell -->
+        <div class="notif-bell-container">
+          <button type="button" class="btn-notif-bell" onclick="toggleNotifDropdown()" aria-label="Notifications">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#334155" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            <span class="notif-dot-badge" id="notif-dot" hidden></span>
+          </button>
+
+          <!-- Notifications Dropdown -->
+          <div class="notif-dropdown-card" id="notif-dropdown" hidden>
+            <div class="notif-dropdown-header">
+              <span>Realtime Food Safety Alerts</span>
+              <button type="button" class="btn btn-ghost btn-sm" onclick="clearNotifications()" style="font-size:0.6875rem;">Clear All</button>
+            </div>
+            <div class="notif-items-list" id="notif-items-list">
+              <div style="padding:16px;text-align:center;color:#94A3B8;font-size:0.8125rem;">No active high-risk alerts.</div>
+            </div>
+          </div>
+        </div>
+
+        <a href="../index.html" class="btn btn-secondary btn-sm" target="_blank">
+          <span>View Public Site &rarr;</span>
+        </a>
+      </div>
+    </header>
+
+    <!-- Tab 1: Overview View -->
+    <main class="admin-content-view" id="view-overview">
+      <!-- Top Metrics -->
+      <div class="admin-metrics-grid">
+        <div class="admin-stat-card">
+          <div class="stat-card-top">
+            <span class="stat-card-label">Donations Today</span>
+            <div class="stat-card-icon" style="background:#DEF7EC;color:#03543F;">📦</div>
+          </div>
+          <strong class="stat-card-val" id="stat-donations-today">0</strong>
+          <span class="stat-card-sub" id="stat-donations-today-sub">Live today</span>
+        </div>
+
+        <div class="admin-stat-card">
+          <div class="stat-card-top">
+            <span class="stat-card-label">Meals Rescued</span>
+            <div class="stat-card-icon" style="background:#E0E7FF;color:#3730A3;">🍛</div>
+          </div>
+          <strong class="stat-card-val" id="stat-meals-rescued">0</strong>
+          <span class="stat-card-sub">Cumulative rescued meals</span>
+        </div>
+
+        <div class="admin-stat-card">
+          <div class="stat-card-top">
+            <span class="stat-card-label">Kg Diverted</span>
+            <div class="stat-card-icon" style="background:#FEF3C7;color:#92400E;">⚖️</div>
+          </div>
+          <strong class="stat-card-val" id="stat-kg-diverted">0 kg</strong>
+          <span class="stat-card-sub">0.4 kg per meal ratio</span>
+        </div>
+
+        <div class="admin-stat-card">
+          <div class="stat-card-top">
+            <span class="stat-card-label">CO₂ Avoided</span>
+            <div class="stat-card-icon" style="background:#DCFCE7;color:#15803D;">🌱</div>
+          </div>
+          <strong class="stat-card-val" id="stat-co2-avoided">0 kg</strong>
+          <span class="stat-card-sub">2.5 kg CO₂e / kg food</span>
+        </div>
+
+        <div class="admin-stat-card">
+          <div class="stat-card-top">
+            <span class="stat-card-label">Active Dispatches</span>
+            <div class="stat-card-icon" style="background:#FEE2E2;color:#991B1B;">⚡</div>
+          </div>
+          <strong class="stat-card-val" id="stat-active-donations">0</strong>
+          <span class="stat-card-sub" id="stat-active-sub">In-transit &bull; 0 Expired</span>
+        </div>
+
+        <div class="admin-stat-card">
+          <div class="stat-card-top">
+            <span class="stat-card-label">Dumpster / Expired</span>
+            <div class="stat-card-icon" style="background:#F1F5F9;color:#475569;">🗑️</div>
+          </div>
+          <strong class="stat-card-val" id="stat-dumpster-count" style="color:#10B981;">0</strong>
+          <span class="stat-card-sub">Zero-Landfill Protocol</span>
+        </div>
+      </div>
+
+      <!-- Charts Grid -->
+      <div class="admin-charts-grid">
+        <div class="admin-card">
+          <div class="admin-card-header">
+            <h3 class="admin-card-title">14-Day Rescue Velocity (Donations / Day)</h3>
+            <span style="font-size:0.75rem;color:var(--text-muted);font-family:var(--font-mono);">Trend: +28% WoW</span>
+          </div>
+          <canvas id="chart-donations-trend" height="140" style="width:100%;max-height:240px;"></canvas>
+        </div>
+
+        <div class="admin-card">
+          <div class="admin-card-header">
+            <h3 class="admin-card-title">Meals by City Cluster</h3>
+            <span style="font-size:0.75rem;color:var(--text-muted);">Top Metro Distribution</span>
+          </div>
+          <canvas id="chart-city-distribution" height="140" style="width:100%;max-height:240px;"></canvas>
+        </div>
+      </div>
+    </main>
+
+    <!-- Tab 2: Live Donations View -->
+    <main class="admin-content-view" id="view-donations" hidden>
+      <div class="admin-card">
+        <div class="admin-table-controls">
+          <div class="admin-search-box">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="filter-donation-search" placeholder="Search by food, area, or OTP..." oninput="filterDonationsTable()">
+          </div>
+
+          <div class="admin-filter-group">
+            <select id="filter-donation-status" class="custom-select" style="min-width:140px;" onchange="filterDonationsTable()">
+              <option value="all">All Statuses</option>
+              <option value="Posted">Posted</option>
+              <option value="Matched">Matched</option>
+              <option value="Picked up">Picked up</option>
+              <option value="Delivered">Delivered</option>
+              <option value="Expired">Expired</option>
+            </select>
+
+            <select id="filter-donation-city" class="custom-select" style="min-width:140px;" onchange="filterDonationsTable()">
+              <option value="all">All Cities</option>
+              <option value="Jaipur">Jaipur</option>
+              <option value="Delhi NCR">Delhi NCR</option>
+              <option value="Bengaluru">Bengaluru</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="admin-table-wrapper">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Source</th>
+                <th>Food &amp; Qty</th>
+                <th>City &amp; Area</th>
+                <th>Stage</th>
+                <th>Status</th>
+                <th>Recipient Node</th>
+                <th>Safe Clock</th>
+                <th>OTP</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="admin-donations-tbody">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+    <!-- Tab 3: Ladder Monitor Kanban View -->
+    <main class="admin-content-view" id="view-ladder" hidden>
+      <div class="admin-card-header" style="margin-bottom:18px;">
+        <div>
+          <h2 style="font-size:1.125rem;font-weight:700;margin:0 0 4px 0;">Dynamic Food Ladder Kanban</h2>
+          <p style="font-size:0.8125rem;color:var(--text-muted);margin:0;">Visual tracking of perishable surplus batches as safe consumption windows elapse.</p>
+        </div>
+      </div>
+
+      <div class="ladder-board-grid">
+        <!-- Stage 1 -->
+        <div class="ladder-board-col">
+          <div class="ladder-col-header s1">
+            <span class="ladder-col-title">Tier 1: Nearby Shelter (&le;3km)</span>
+            <span class="ladder-col-count" id="count-stage-1">0</span>
+          </div>
+          <div class="ladder-cards-list" id="ladder-col-1"></div>
+        </div>
+
+        <!-- Stage 2 -->
+        <div class="ladder-board-col">
+          <div class="ladder-col-header s2">
+            <span class="ladder-col-title">Tier 2: Regional Shelter (&le;10km)</span>
+            <span class="ladder-col-count" id="count-stage-2">0</span>
+          </div>
+          <div class="ladder-cards-list" id="ladder-col-2"></div>
+        </div>
+
+        <!-- Stage 3 -->
+        <div class="ladder-board-col">
+          <div class="ladder-col-header s3">
+            <span class="ladder-col-title">Tier 3: Gaushala (&le;15km)</span>
+            <span class="ladder-col-count" id="count-stage-3">0</span>
+          </div>
+          <div class="ladder-cards-list" id="ladder-col-3"></div>
+        </div>
+
+        <!-- Stage 4 -->
+        <div class="ladder-board-col">
+          <div class="ladder-col-header s4">
+            <span class="ladder-col-title">Tier 4: Bio-Compost (&le;30km)</span>
+            <span class="ladder-col-count" id="count-stage-4">0</span>
+          </div>
+          <div class="ladder-cards-list" id="ladder-col-4"></div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Tab 4: Recipients Management View -->
+    <main class="admin-content-view" id="view-recipients" hidden>
+      <div class="admin-card">
+        <div class="admin-table-controls">
+          <div>
+            <h3 class="admin-card-title">Authorized Shelter &amp; Gaushala Network</h3>
+          </div>
+          <button type="button" class="btn btn-primary btn-sm" onclick="openRecipientModal()">
+            <span>+ Add Recipient Node</span>
+          </button>
+        </div>
+
+        <div class="admin-table-wrapper">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name &amp; Type</th>
+                <th>City</th>
+                <th>Capacity</th>
+                <th>Coordinates</th>
+                <th>Verified</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="admin-recipients-tbody">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+    <!-- Tab 5: Verification Queue View -->
+    <main class="admin-content-view" id="view-verification" hidden>
+      <div class="admin-card">
+        <div class="admin-table-controls">
+          <div>
+            <h3 class="admin-card-title">Pending Recipient &amp; Commercial Donor Approvals</h3>
+            <p style="font-size:0.8125rem;color:var(--text-muted);margin-top:4px;">Review FSSAI / NGO certifications before enabling active dispatch routing.</p>
+          </div>
+        </div>
+
+        <div class="admin-table-wrapper">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Node Name</th>
+                <th>Category</th>
+                <th>City</th>
+                <th>Capacity / Details</th>
+                <th>Verification Action</th>
+              </tr>
+            </thead>
+            <tbody id="admin-verification-tbody">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+    <!-- Tab 6: Cities Management View -->
+    <main class="admin-content-view" id="view-cities" hidden>
+      <div class="admin-card">
+        <div class="admin-table-controls">
+          <div>
+            <h3 class="admin-card-title">Operational Cluster Cities</h3>
+            <p style="font-size:0.8125rem;color:var(--text-muted);margin-top:4px;">Manage expansion hubs. Live cities appear in public donor dropdowns and coverage grids.</p>
+          </div>
+          <button type="button" class="btn btn-primary btn-sm" onclick="openCityModal()">
+            <span>+ Add Expansion City</span>
+          </button>
+        </div>
+
+        <div class="admin-table-wrapper">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>City ID</th>
+                <th>Metro Cluster Name</th>
+                <th>Operational Status</th>
+                <th>Toggle Status</th>
+              </tr>
+            </thead>
+            <tbody id="admin-cities-tbody">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+    <!-- Tab 7: Reports & Certificates View -->
+    <main class="admin-content-view" id="view-reports" hidden>
+      <div class="admin-card" style="margin-bottom:24px;">
+        <div class="admin-table-controls">
+          <div>
+            <h3 class="admin-card-title">Telemetry Reports &amp; CSV Export</h3>
+            <p style="font-size:0.8125rem;color:var(--text-muted);margin-top:4px;">Download raw dispatch telemetry records for regulatory and auditing compliance.</p>
+          </div>
+          <div style="display:flex;gap:10px;">
+            <input type="date" id="report-start-date" class="custom-input" style="padding:6px 12px;font-size:0.8125rem;">
+            <input type="date" id="report-end-date" class="custom-input" style="padding:6px 12px;font-size:0.8125rem;">
+            <button type="button" class="btn btn-primary btn-sm" onclick="exportDonationsCSV()">
+              <span>📥 Export CSV Data</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Printable Certificate Generator -->
+      <div class="admin-card">
+        <div class="admin-card-header">
+          <h3 class="admin-card-title">Printable Donor Impact Certificate</h3>
+          <button type="button" class="btn btn-secondary btn-sm btn-print-hide" onclick="window.print()">
+            <span>🖨️ Print Certificate</span>
+          </button>
+        </div>
+
+        <div class="certificate-print-sheet" id="certificate-preview">
+          <div class="cert-header">
+            <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px;">
+              <div class="brand-symbol" style="background:#0F7B5F;color:#FFF;width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+              </div>
+              <strong style="font-size:1.5rem;color:#0F172A;letter-spacing:-0.5px;">Sahakara National Food Rescue Platform</strong>
+            </div>
+            <span style="font-size:0.875rem;font-weight:700;color:#0F7B5F;letter-spacing:1px;text-transform:uppercase;">Certificate of Zero-Food-Waste Compliance</span>
+          </div>
+
+          <div style="text-align:center;margin:32px 0;">
+            <p style="font-size:1rem;color:#64748B;margin-bottom:8px;">This is proudly presented to</p>
+            <h2 style="font-size:1.75rem;font-weight:800;color:#0F172A;margin:0 0 16px 0;" id="cert-donor-name">Amity University Central Mess</h2>
+            <p style="font-size:0.9375rem;color:#334155;line-height:1.6;max-width:540px;margin:0 auto;">
+              For demonstrating exemplary national stewardship in preventing commercial food waste and safely redistributing surplus batches to verified humanitarian shelters.
+            </p>
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;padding:20px;text-align:center;margin-bottom:32px;">
+            <div>
+              <span style="font-size:0.75rem;color:#64748B;text-transform:uppercase;font-weight:700;">Meals Donated</span>
+              <strong style="display:block;font-size:1.375rem;color:#0F172A;margin-top:4px;" id="cert-meals-count">40 Meals</strong>
+            </div>
+            <div>
+              <span style="font-size:0.75rem;color:#64748B;text-transform:uppercase;font-weight:700;">Weight Diverted</span>
+              <strong style="display:block;font-size:1.375rem;color:#0F172A;margin-top:4px;" id="cert-kg-count">16.0 kg</strong>
+            </div>
+            <div>
+              <span style="font-size:0.75rem;color:#64748B;text-transform:uppercase;font-weight:700;">CO₂ Avoided</span>
+              <strong style="display:block;font-size:1.375rem;color:#10B981;margin-top:4px;" id="cert-co2-count">40.0 kg CO₂e</strong>
+            </div>
+          </div>
+
+          <div style="display:flex;justify-content:space-between;align-items:flex-end;font-size:0.8125rem;color:#64748B;border-top:1px solid #E2E8F0;padding-top:20px;">
+            <div>
+              <span>Verification Token: <strong style="font-family:var(--font-mono);color:#0F172A;" id="cert-token-code">#SK-AUTH-4419</strong></span><br>
+              <span>Good Samaritan Law: <strong style="color:#0F7B5F;">Shielded Under Sec. 31</strong></span>
+            </div>
+            <div style="text-align:right;">
+              <span>Issued on: <strong id="cert-issue-date">September 25, 2026</strong></span><br>
+              <span>Sahakara National Logistics Secretariat</span>
+            </div>
+          </div>
+
+          <div class="cert-stamp">
+            <span>Verified<br>Zero-Waste<br>Audit</span>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Tab 8: Audit Log View -->
+    <main class="admin-content-view" id="view-audit" hidden>
+      <div class="admin-card">
+        <div class="admin-table-controls">
+          <div>
+            <h3 class="admin-card-title">Administrative Actions Audit Trail</h3>
+            <p style="font-size:0.8125rem;color:var(--text-muted);margin-top:4px;">Immutable ledger recording every approval, status change, and recipient modification.</p>
+          </div>
+        </div>
+
+        <div class="admin-table-wrapper">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Timestamp</th>
+                <th>Admin User</th>
+                <th>Action</th>
+                <th>Target Object</th>
+                <th>Details</th>
+              </tr>
+            </thead>
+            <tbody id="admin-audit-tbody">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+  </div>
+
+  <!-- Side Drawer: Donation Details & OSRM Map -->
+  <div class="admin-side-drawer" id="donation-drawer" hidden>
+    <div class="drawer-header">
+      <div>
+        <span style="font-size:0.6875rem;font-weight:700;color:var(--brand-green);letter-spacing:1px;">DISPATCH TELEMETRY</span>
+        <h3 style="font-size:1.125rem;font-weight:800;margin:0;" id="drawer-donation-title">Donation Details</h3>
+      </div>
+      <button type="button" class="modal-close-btn" onclick="closeDonationDrawer()">&times;</button>
+    </div>
+
+    <div class="drawer-body">
+      <!-- Mini OSRM Leaflet Map -->
+      <div id="drawer-leaflet-map" style="height:200px;width:100%;border-radius:10px;margin-bottom:18px;border:1px solid var(--admin-border);"></div>
+
+      <div class="form-group">
+        <label class="input-label">Batch ID &amp; Source</label>
+        <div style="display:flex;justify-content:space-between;font-size:0.875rem;">
+          <code id="drawer-batch-id">--</code>
+          <span class="source-badge web" id="drawer-source">Web</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="input-label">4-Digit Verification OTP</label>
+        <strong style="font-family:var(--font-mono);font-size:1.5rem;color:var(--brand-green);letter-spacing:3px;" id="drawer-otp">----</strong>
+      </div>
+
+      <div class="form-group">
+        <label class="input-label">Matched Recipient</label>
+        <select id="drawer-reassign-select" class="custom-select"></select>
+      </div>
+
+      <div class="form-group">
+        <label class="input-label">Dispatch Status</label>
+        <select id="drawer-status-select" class="custom-select">
+          <option value="Posted">Posted</option>
+          <option value="Matched">Matched</option>
+          <option value="Picked up">Picked up</option>
+          <option value="Delivered">Delivered</option>
+          <option value="Expired">Expired</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="drawer-footer">
+      <button type="button" class="btn btn-secondary btn-sm" onclick="closeDonationDrawer()">Close</button>
+      <button type="button" class="btn btn-primary btn-sm" onclick="saveDonationDrawerChanges()">Save Updates</button>
+    </div>
+  </div>
+
+  <!-- Modal: Add / Edit Recipient -->
+  <div class="modal-backdrop" id="modal-recipient" hidden>
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-heading" id="recipient-modal-heading">Add Recipient Node</h3>
+        <button type="button" class="modal-close-btn" onclick="closeRecipientModal()">&times;</button>
+      </div>
+      <form id="recipient-form" onsubmit="handleSaveRecipient(event)" class="modal-form-body">
+        <input type="hidden" id="rec-edit-id">
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="input-label">Node Name <span class="req">*</span></label>
+            <input type="text" id="rec-name" class="custom-input" placeholder="e.g. Apna Ghar Shelter" required>
+          </div>
+          <div class="form-group">
+            <label class="input-label">Node Type <span class="req">*</span></label>
+            <select id="rec-type" class="custom-select" required>
+              <option value="shelter">Human Shelter (Tier 1 &amp; 2)</option>
+              <option value="gaushala">Gaushala / Cattle Sanctuary (Tier 3)</option>
+              <option value="compost">Municipal Bio-Compost Facility (Tier 4)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="input-label">City Cluster <span class="req">*</span></label>
+            <select id="rec-city" class="custom-select" required>
+              <option value="Jaipur">Jaipur</option>
+              <option value="Delhi NCR">Delhi NCR</option>
+              <option value="Bengaluru">Bengaluru</option>
+              <option value="Mumbai">Mumbai</option>
+              <option value="Hyderabad">Hyderabad</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="input-label">Intake Capacity (Meals) <span class="req">*</span></label>
+            <input type="number" id="rec-capacity" class="custom-input" min="10" placeholder="200" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="input-label">Click on Map to Set Coordinates (Lat / Lon)</label>
+          <div id="rec-picker-map" style="height:180px;width:100%;border-radius:8px;border:1px solid var(--admin-border);margin-bottom:8px;"></div>
+          <div class="form-grid-2">
+            <input type="number" step="0.0001" id="rec-lat" class="custom-input" placeholder="Latitude (e.g. 26.9124)" required>
+            <input type="number" step="0.0001" id="rec-lon" class="custom-input" placeholder="Longitude (e.g. 75.8200)" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="input-label">Needs Note / Guidelines</label>
+          <input type="text" id="rec-needs-note" class="custom-input" placeholder="e.g. Accepts hot cooked vegetarian meals before 22:00">
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeRecipientModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Recipient Node</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Add City -->
+  <div class="modal-backdrop" id="modal-city" hidden>
+    <div class="modal-dialog modal-dialog-sm">
+      <div class="modal-header">
+        <h3 class="modal-heading">Add Expansion City</h3>
+        <button type="button" class="modal-close-btn" onclick="closeCityModal()">&times;</button>
+      </div>
+      <form id="city-form" onsubmit="handleSaveCity(event)" class="modal-form-body">
+        <div class="form-group">
+          <label class="input-label">City Name <span class="req">*</span></label>
+          <input type="text" id="city-input-name" class="custom-input" placeholder="e.g. Pune" required>
+        </div>
+        <div class="form-group">
+          <label class="input-label">Status <span class="req">*</span></label>
+          <select id="city-input-status" class="custom-select" required>
+            <option value="Live">Live</option>
+            <option value="Coming soon" selected>Coming soon</option>
+          </select>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeCityModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save City</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Local Vendor Scripts -->
+  <script src="../vendor/leaflet.js?v=2.0.1"></script>
+  <script src="../vendor/supabase.js?v=2.0.1"></script>
+  <script src="../config.js?v=2.0.1"></script>
+  <script src="../matching.js?v=2.0.1"></script>
+  <script src="admin.js?v=2.0.1"></script>
+</body>
+</html>

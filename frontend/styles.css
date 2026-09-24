@@ -866,8 +866,23 @@ a {
 }
 
 .jaipur-leaflet-map {
-  background-color: #F8FAFC;
+  background-color: #E2E8F0;
+  height: 380px !important;
+  min-height: 380px !important;
+  width: 100% !important;
+  display: block !important;
+  position: relative;
   z-index: 1;
+}
+
+.leaflet-container {
+  background: #E2E8F0 !important;
+  outline: none;
+}
+
+.custom-map-pin {
+  background: transparent !important;
+  border: none !important;
 }
 
 /* Floating Telemetry HUD */
@@ -2844,4 +2859,300 @@ a {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.4; }
 }
+
+/* ==========================================================================
+   SUPABASE REALTIME DRIVER ACTIONS & IVR DIALPAD STYLES
+   ========================================================================== */
+
+/* Hero Driver Actions Bar */
+.driver-live-actions {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border-light);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.driver-actions-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+}
+
+.driver-btn-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-action-pickup, .btn-action-deliver {
+  background: #FFFFFF;
+  border: 1.5px solid var(--brand-green);
+  color: var(--brand-green);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.btn-action-pickup:hover {
+  background: var(--brand-green);
+  color: #FFFFFF;
+}
+
+.btn-action-deliver {
+  border-color: #2563EB;
+  color: #2563EB;
+}
+
+.btn-action-deliver:hover {
+  background: #2563EB;
+  color: #FFFFFF;
+}
+
+/* Helpline Mode Tabs */
+.helpline-mode-tabs {
+  display: inline-flex;
+  background-color: var(--bg-light);
+  padding: 2px;
+  border-radius: var(--radius-sm);
+  gap: 2px;
+}
+
+.mode-tab {
+  background: transparent;
+  border: none;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 4px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.mode-tab.active {
+  background: #FFFFFF;
+  color: var(--text-primary);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+}
+
+/* IVR Dialpad Mockup */
+.ivr-keypad-mockup {
+  background: #111827;
+  border: 1px solid #374151;
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  color: #FFFFFF;
+  margin-top: 12px;
+}
+
+.ivr-screen {
+  background: #030712;
+  border: 1px solid #1F2937;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 14px;
+}
+
+.ivr-screen-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.6875rem;
+  font-family: var(--font-mono);
+  color: #10B981;
+  margin-bottom: 6px;
+}
+
+.ivr-live-dot {
+  animation: blink-dot 1s infinite;
+}
+
+.ivr-prompt {
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: #E5E7EB;
+}
+
+.ivr-input-display {
+  font-family: var(--font-mono);
+  font-size: 1.125rem;
+  color: #FBBF24;
+  letter-spacing: 3px;
+  min-height: 24px;
+  margin-top: 6px;
+}
+
+.ivr-keypad-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  max-width: 240px;
+  margin: 0 auto;
+}
+
+.key-btn {
+  background: #1F2937;
+  border: 1px solid #374151;
+  border-radius: 6px;
+  color: #FFFFFF;
+  padding: 10px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.1s ease;
+}
+
+.key-btn span {
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.key-btn small {
+  font-size: 0.5625rem;
+  color: #9CA3AF;
+  margin-top: 2px;
+  letter-spacing: 1px;
+}
+
+.key-btn:hover {
+  background: #374151;
+  border-color: #4B5563;
+}
+
+.key-btn:active {
+  transform: scale(0.95);
+  background: #10B981;
+}
+
+.key-btn.special-hash {
+  background: #065F46;
+  border-color: #059669;
+}
+
+.ivr-footer-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px solid #1F2937;
+}
+
+.ivr-step-badge {
+  font-size: 0.6875rem;
+  font-family: var(--font-mono);
+  color: #9CA3AF;
+}
+
+/* Realtime Rescue Telemetry Table */
+.realtime-log-container {
+  overflow-x: auto;
+  margin-top: 8px;
+}
+
+.log-table-wrapper {
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.live-donations-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+  text-align: left;
+}
+
+.live-donations-table th {
+  background-color: var(--bg-light);
+  color: var(--text-secondary);
+  font-weight: 700;
+  padding: 8px 10px;
+  border-bottom: 1.5px solid var(--border-light);
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.live-donations-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border-light);
+  color: var(--text-primary);
+  vertical-align: middle;
+}
+
+.live-donations-table tr:hover {
+  background-color: #F9FAFB;
+}
+
+.source-badge {
+  font-size: 0.625rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.source-badge.web {
+  background-color: #EFF6FF;
+  color: #1E40AF;
+  border: 1px solid #BFDBFE;
+}
+
+.source-badge.helpline {
+  background-color: #FEF3C7;
+  color: #92400E;
+  border: 1px solid #FDE68A;
+}
+
+.source-badge.sms {
+  background-color: #F3E8FF;
+  color: #6B21A8;
+  border: 1px solid #E9D5FF;
+}
+
+.stage-tag {
+  font-size: 0.625rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: var(--radius-pill);
+}
+
+.stage-tag.s1 { background: #ECFDF5; color: #065F46; }
+.stage-tag.s2 { background: #FEF3C7; color: #92400E; }
+.stage-tag.s3 { background: #FFEDD5; color: #C2410C; }
+.stage-tag.s4 { background: #F3F4F6; color: #4B5563; }
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+}
+
+.status-pill.posted { background: #F3F4F6; color: #374151; }
+.status-pill.matched { background: #DBEAFE; color: #1E40AF; }
+.status-pill.picked-up { background: #FEF3C7; color: #92400E; }
+.status-pill.delivered { background: #DEF7EC; color: #03543F; }
+.status-pill.expired { background: #FEE2E2; color: #991B1B; }
+
+
+
+
 

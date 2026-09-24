@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Environment Variables
+.env
+.env.*
+!.env.example
+
+# Build outputs
+dist/
+build/
+.vercel/
+
+# OS & Logs
+.DS_Store
+*.log
+npm-debug.log*
+
+# SQLite Database
+backend/data.sqlite*
+data.sqlite*

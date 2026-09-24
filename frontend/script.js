@@ -1,162 +1,872 @@
 /**
- * SAHAKARA — Food Rescue Platform (Jaipur Cluster)
- * Pure Client-Side Architecture (Independent of Backend Server)
- * OpenStreetMap (Leaflet.js) + OSRM Road Routing + Interactive Telemetry Simulation
+ * SAHAKARA — Food Rescue Platform (National Surplus-to-Shelter Engine)
+ * Powered by Supabase (Postgres + Realtime), OpenStreetMap (Leaflet.js) & OSRM Road Routing.
  */
 
-// Initial Jaipur Nodes Database
-const JAIPUR_NODES = [
+// Global App State
+let sbClient = null;
+let realtimeChannel = null;
+
+let allRecipients = [];
+let allDonations = [];
+let jaipurMap = null;
+let mapMarkers = [];
+let activeRoutePolyline = null;
+let activeFilter = 'all';
+
+// Default Seed Recipients (in case Supabase is initializing or offline)
+const DEFAULT_RECIPIENTS = [
   {
-    id: 'node-amity-mess',
-    type: 'donor',
-    name: 'Amity University Jaipur (Central Mess)',
-    category: 'University Dining & Hostel Kitchen',
-    lat: 27.1729,
-    lng: 75.9542,
-    address: 'SP-1, Kant Kalwar, NH-11C, RIICO Industrial Area, Jaipur, Rajasthan 303002',
-    capacity_meals: 250,
-    status: 'Surplus Dispatched (40 Meals Hot Dal & Rice)',
-    phone: '+91 141 237 8899'
-  },
-  {
-    id: 'node-ananda',
-    type: 'shelter',
+    id: 'rec-ananda',
     name: 'Ananda Seva Ashram (Node 04)',
-    category: 'Shelter Home & Community Kitchen',
+    type: 'shelter',
     lat: 26.9248,
-    lng: 75.8267,
-    address: 'Bani Park, Near Collectorate Circle, Jaipur, Rajasthan 302016',
-    capacity_meals: 120,
-    status: 'Awaiting Incoming EV Delivery (OTP: 4419)',
-    phone: '+91 98290 44321'
+    lon: 75.8267,
+    capacity: 150,
+    needs_note: 'Accepts hot vegetarian meals and roti packs',
+    address: 'Bani Park, Near Collectorate Circle, Jaipur 302016'
   },
   {
-    id: 'node-akshaya-patra',
-    type: 'shelter',
+    id: 'rec-akshaya-patra',
     name: 'Akshaya Patra Foundation Jaipur',
-    category: 'Central Mega Kitchen & Distribution',
+    type: 'shelter',
     lat: 26.8202,
-    lng: 75.8647,
-    address: 'Mahal Road, Jagatpura, Jaipur, Rajasthan 302017',
-    capacity_meals: 1500,
-    status: 'Ready to Receive Surplus Batches',
-    phone: '+91 141 306 3000'
+    lon: 75.8647,
+    capacity: 1500,
+    needs_note: 'Central mega-kitchen with cold/hot bulk storage',
+    address: 'Mahal Road, Jagatpura, Jaipur 302017'
   },
   {
-    id: 'node-apna-ghar',
-    type: 'shelter',
+    id: 'rec-apna-ghar',
     name: 'Apna Ghar Vridhashram & Child Care',
-    category: 'Elderly & Orphan Welfare Home',
-    lat: 26.8856,
-    lng: 75.7654,
-    address: 'Shyam Nagar, Janpath, Jaipur, Rajasthan 302019',
-    capacity_meals: 85,
-    status: 'Night Meal Allocation Confirmed',
-    phone: '+91 94140 12890'
-  },
-  {
-    id: 'node-prerna',
     type: 'shelter',
+    lat: 26.8856,
+    lon: 75.7654,
+    capacity: 100,
+    needs_note: 'Elderly and child care requiring soft cooked food',
+    address: 'Shyam Nagar, Janpath, Jaipur 302019'
+  },
+  {
+    id: 'rec-prerna',
     name: 'Prerna Balika Ashram',
-    category: 'Girls Education & Residential Care',
+    type: 'shelter',
     lat: 26.9654,
-    lng: 75.7723,
-    address: 'Vidyadhar Nagar, Sector 3, Jaipur, Rajasthan 302039',
-    capacity_meals: 90,
-    status: 'Capacity Available (60 meals)',
-    phone: '+91 98280 55432'
+    lon: 75.7723,
+    capacity: 90,
+    needs_note: 'Residential home for girls, dinner intake before 22:00',
+    address: 'Vidyadhar Nagar, Sector 3, Jaipur 302039'
   },
   {
-    id: 'node-gaushala-govind',
-    type: 'gaushala',
+    id: 'rec-gaushala-govind',
     name: 'Shree Govind Dev Ji Gaushala Trust',
-    category: 'Bio-Feed & Livestock Nutrition',
-    lat: 26.9298,
-    lng: 75.8242,
-    address: 'Jaleb Chowk, City Palace Complex, Jaipur, Rajasthan 302002',
-    capacity_meals: 600,
-    status: 'Receiving Organic Veg Peels & Grains',
-    phone: '+91 141 260 2341'
-  },
-  {
-    id: 'node-gaushala-haldighati',
     type: 'gaushala',
-    name: 'Pratap Nagar Kamdhenu Gaushala',
-    category: 'Livestock Care Node',
-    lat: 26.8012,
-    lng: 75.8219,
-    address: 'Sector 8, Pratap Nagar, Jaipur, Rajasthan 302033',
-    capacity_meals: 450,
-    status: 'Active Intake',
-    phone: '+91 98292 77102'
+    lat: 26.9298,
+    lon: 75.8242,
+    capacity: 600,
+    needs_note: 'Accepts fresh raw greens, unused grain, and vegetable peels',
+    address: 'City Palace Complex, Jaipur 302002'
   },
   {
-    id: 'node-compost-durgapura',
-    type: 'compost',
+    id: 'rec-gaushala-pratap',
+    name: 'Pratap Nagar Kamdhenu Gaushala',
+    type: 'gaushala',
+    lat: 26.8012,
+    lon: 75.8219,
+    capacity: 450,
+    needs_note: 'Registered cattle welfare shelter with organic composting',
+    address: 'Sector 8, Pratap Nagar, Jaipur 302033'
+  },
+  {
+    id: 'rec-compost-durgapura',
     name: 'Durgapura Municipal Bio-Compost Hub',
-    category: 'Aerobic Digest & Soil Regeneration',
+    type: 'compost',
     lat: 26.8524,
-    lng: 75.7891,
-    address: 'Agriculture Research Centre Road, Durgapura, Jaipur, Rajasthan 302018',
-    capacity_meals: 2000,
-    status: 'Zero-Landfill Processing Online',
-    phone: '+91 141 276 0198'
+    lon: 75.7891,
+    capacity: 2000,
+    needs_note: 'Aerobic decomposition and soil enrichment facility',
+    address: 'Durgapura, Jaipur 302018'
+  },
+  {
+    id: 'rec-compost-jmc',
+    name: 'JMC Central Biomethanation Facility',
+    type: 'compost',
+    lat: 26.9420,
+    lon: 75.7980,
+    capacity: 3500,
+    needs_note: 'High-capacity methane capture and organic bio-fertilizer unit',
+    address: 'Jaipur 302012'
   }
 ];
 
 // Active Volunteer Drivers
-let JAIPUR_DRIVERS = [
+let ACTIVE_DRIVERS = [
   {
     id: 'drv-vikram',
     name: 'Driver Vikram R. (EV Cargo-4419)',
-    vehicle_type: 'Mahindra Zor Grand Electric (Insulated Pod)',
+    vehicle_type: 'Mahindra Zor Grand Electric',
     vehicle_number: 'RJ-14-EV-4419',
     lat: 27.0250,
     lng: 75.8900,
     speed_kmh: 41,
     battery_level: '84%',
     cargo_temp_celsius: 64,
-    status: 'In Transit — Amity Mess to Bani Park Shelter',
-    active_batch: 'SK-8821',
+    status: 'In Transit',
     eta_mins: 14
   }
 ];
 
 // Active Live Dispatch State
 let currentLiveDispatch = {
-  tracking_id: 'SK-8821',
-  donor_name: 'Amity University Jaipur (Central Mess)',
-  food_title: '40 Hot Dinner Meals (Rice, Dal Makhani & Roti)',
-  quantity: '40 Meals (~18 kg)',
-  meals_count: 40,
-  temp_celsius: 64,
-  status: 'picked_up',
-  pickup_address: 'SP-1, Kant Kalwar, NH-11C, RIICO Industrial Area, Jaipur 303002',
-  assigned_shelter: 'Ananda Seva Ashram (Node 04)',
-  shelter_distance_km: 2.4,
-  assigned_driver: 'Driver Vikram R. (EV Cargo-4419)',
-  driver_eta_mins: 14,
-  otp_code: '4419'
+  id: 'demo-initial-dispatch',
+  food: '40 Hot Dinner Meals (Rice, Dal Makhani & Roti)',
+  qty: 40,
+  donor_type: 'Mess',
+  city: 'Jaipur',
+  area: 'Amity University Campus Mess, Kant Kalwar',
+  lat: 27.1729,
+  lon: 75.9542,
+  safe_minutes: 240,
+  food_category: 'cooked rice/dal',
+  created_at: new Date(Date.now() - 25 * 60000).toISOString(),
+  status: 'Picked up',
+  match_id: 'rec-ananda',
+  stage: 1,
+  source: 'Web',
+  otp: '4419'
 };
 
-let currentModalCategory = '';
-let jaipurMap = null;
-let mapMarkers = [];
-let activeRoutePolyline = null;
-let activeFilter = 'all';
-
+/* ==========================================================================
+   INITIALIZATION (DOM CONTENT LOADED)
+   ========================================================================== */
 document.addEventListener('DOMContentLoaded', () => {
-  initLadderCountdown();
-  initStatsCounter();
-  renderDispatchCard(currentLiveDispatch);
+  // 1. Initial State
+  allRecipients = [...DEFAULT_RECIPIENTS];
+  allDonations = [];
+  currentLiveDispatch = null;
+  
+  renderRealtimeTable();
+  recalculateDashboardMetrics();
   initJaipurMap();
+  initLadderCountdown();
   initAuth();
+  initHelplineIVR();
+
+  // 2. Asynchronous Supabase Connect & Realtime Sync
+  initSupabaseClient();
+  loadCities();
+  loadRecipients().then(() => {
+    renderMapData();
+  });
+  loadDonations();
+  setupRealtimeSubscription();
 });
 
-/* ==========================================================================
-   1. Live Last Resort Ladder & Time-Warp Simulator (Judge Demo Engine)
-   ========================================================================== */
+let allCities = [
+  { id: 'city-jaipur', name: 'Jaipur', status: 'Live' },
+  { id: 'city-delhi', name: 'Delhi NCR', status: 'Live' },
+  { id: 'city-blr', name: 'Bengaluru', status: 'Live' },
+  { id: 'city-mumbai', name: 'Mumbai', status: 'Coming soon' },
+  { id: 'city-hyd', name: 'Hyderabad', status: 'Coming soon' }
+];
 
+async function loadCities() {
+  if (sbClient) {
+    try {
+      const { data, error } = await sbClient.from('cities').select('*').order('name');
+      if (!error && data && data.length > 0) {
+        allCities = data;
+      }
+    } catch (e) {}
+  }
+  renderCityDropdown();
+  renderCityChips();
+}
+
+function renderCityDropdown() {
+  const select = document.getElementById('post-city');
+  if (!select) return;
+  const liveCities = allCities.filter((c) => c.status === 'Live');
+  select.innerHTML = `
+    <option value="" disabled selected>Select your city...</option>
+    ${liveCities.map((c) => `<option value="${c.name}">${c.name} (Live)</option>`).join('')}
+  `;
+}
+
+function renderCityChips() {
+  const container = document.getElementById('city-chips-grid');
+  if (!container) return;
+  container.innerHTML = allCities
+    .map(
+      (c) => `
+      <div class="city-chip ${c.status === 'Live' ? 'live' : 'coming-soon'}" data-name="${c.name.toLowerCase()}">
+        <span class="city-name">${c.name}</span>
+        <span class="chip-status ${c.status === 'Live' ? 'live' : 'coming-soon'}">${c.status}</span>
+      </div>
+    `
+    )
+    .join('');
+}
+
+/* ==========================================================================
+   1. SUPABASE CLIENT & REALTIME SUBSCRIPTION
+   ========================================================================== */
+function initSupabaseClient() {
+  if (window.SahakaraConfig) {
+    sbClient = window.SahakaraConfig.getClient();
+  }
+}
+
+/**
+ * Loads recipients from Supabase public.recipients table
+ */
+async function loadRecipients() {
+  if (!sbClient) {
+    allRecipients = [...DEFAULT_RECIPIENTS];
+    return;
+  }
+
+  try {
+    const { data, error } = await sbClient.from('recipients').select('*');
+    if (error || !data) {
+      console.warn('[Supabase] Could not fetch recipients:', error?.message);
+      allRecipients = [...DEFAULT_RECIPIENTS];
+    } else {
+      allRecipients = data;
+      console.log(`[Supabase] Loaded ${allRecipients.length} recipients.`);
+    }
+  } catch (err) {
+    console.warn('[Supabase] Error loading recipients:', err.message);
+    allRecipients = [...DEFAULT_RECIPIENTS];
+  }
+}
+
+/**
+ * Loads donations from Supabase public.donations table
+ */
+async function loadDonations() {
+  if (!sbClient) {
+    allDonations = [];
+    currentLiveDispatch = null;
+    renderRealtimeTable();
+    recalculateDashboardMetrics();
+    return;
+  }
+
+  try {
+    const { data, error } = await sbClient
+      .from('donations')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(30);
+
+    if (error || !data) {
+      console.warn('[Supabase] Query error loading donations:', error?.message);
+      allDonations = [];
+      currentLiveDispatch = null;
+    } else {
+      allDonations = data;
+      currentLiveDispatch = data.length > 0 ? data[0] : null;
+      console.log(`[Supabase] Loaded ${allDonations.length} live donations.`);
+    }
+  } catch (err) {
+    console.warn('[Supabase] Error loading donations:', err.message);
+    allDonations = [];
+    currentLiveDispatch = null;
+  }
+
+  if (currentLiveDispatch) {
+    renderDispatchCard(currentLiveDispatch);
+  }
+  renderRealtimeTable();
+  recalculateDashboardMetrics();
+}
+
+/**
+ * Sets up Supabase Realtime Channel
+ */
+function setupRealtimeSubscription() {
+  if (!sbClient) return;
+
+  try {
+    realtimeChannel = sbClient
+      .channel('public:donations_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'donations' },
+        (payload) => {
+          console.log('[Supabase Realtime] Event received:', payload.eventType, payload.new);
+          handleRealtimePayload(payload);
+        }
+      )
+      .subscribe((status) => {
+        console.log('[Supabase Realtime] Subscription status:', status);
+      });
+  } catch (e) {
+    console.warn('[Supabase Realtime] Subscription failed:', e.message);
+  }
+}
+
+/**
+ * Handles incoming Realtime INSERT, UPDATE, DELETE events
+ */
+function handleRealtimePayload(payload) {
+  const { eventType, new: newRow, old: oldRow } = payload;
+
+  if (eventType === 'INSERT') {
+    allDonations.unshift(newRow);
+    currentLiveDispatch = newRow;
+    showToast(`⚡ New Realtime Donation: ${newRow.food} (${newRow.qty} meals)`);
+  } else if (eventType === 'UPDATE') {
+    const idx = allDonations.findIndex((d) => d.id === newRow.id);
+    if (idx !== -1) {
+      allDonations[idx] = newRow;
+    }
+    if (currentLiveDispatch.id === newRow.id) {
+      currentLiveDispatch = newRow;
+    }
+    showToast(`🔔 Donation #${(newRow.id || '').substring(0, 7)} updated to: ${newRow.status}`);
+  } else if (eventType === 'DELETE') {
+    allDonations = allDonations.filter((d) => d.id !== oldRow.id);
+  }
+
+  // Re-render all connected UI components
+  renderDispatchCard(currentLiveDispatch);
+  renderRealtimeTable();
+  recalculateDashboardMetrics();
+  renderMapData();
+}
+
+/* ==========================================================================
+   2. DONOR POST SURPLUS FLOW
+   ========================================================================== */
+function openPostModal(personaRole) {
+  const modal = document.getElementById('modal-post');
+  if (!modal) return;
+  modal.removeAttribute('hidden');
+  modal.hidden = false;
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+
+  const form = document.getElementById('post-form');
+  const success = document.getElementById('post-success');
+  if (form) form.hidden = false;
+  if (success) success.hidden = true;
+
+  if (personaRole === 'donor') {
+    const donorType = document.getElementById('post-donor-type');
+    if (donorType) donorType.value = 'Restaurant';
+  }
+}
+
+function closePostModal() {
+  const modal = document.getElementById('modal-post');
+  if (!modal) return;
+  modal.setAttribute('hidden', '');
+  modal.hidden = true;
+  modal.style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function updateSafetyClockHint(category) {
+  const safeMins = window.SahakaraMatching?.getDefaultSafeMinutes(category) || 240;
+  console.log(`Selected category ${category}: Safe window is ${safeMins} minutes.`);
+}
+
+/**
+ * Handles Donor form submission:
+ * 1. Executes Matching + Ladder logic via SahakaraMatching
+ * 2. Generates 4-digit OTP
+ * 3. Inserts donation row into Supabase
+ * 4. Displays active OTP and matched recipient
+ */
+async function handlePostSubmit(e) {
+  e.preventDefault();
+
+  const donorType = document.getElementById('post-donor-type').value || 'Mess';
+  const establishmentName = document.getElementById('post-donor-name').value.trim() || 'Commercial Donor';
+  const city = document.getElementById('post-city').value || 'Jaipur';
+  const foodCategory = document.getElementById('post-food-category').value || 'cooked rice/dal';
+  const foodDesc = document.getElementById('post-food-desc').value.trim() || 'Hot Fresh Meals';
+  const qty = parseFloat(document.getElementById('post-qty').value) || 40;
+  const address = document.getElementById('post-address').value.trim() || 'Jaipur Central Area';
+
+  const submitBtn = document.getElementById('btn-submit-post');
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span>Matching with Shelters...</span>';
+  }
+
+  // Donor Coordinates (Defaulting to Jaipur cluster location)
+  const donorLat = 27.1729;
+  const donorLon = 75.9542;
+
+  const safeMinutes = window.SahakaraMatching?.getDefaultSafeMinutes(foodCategory) || 240;
+
+  // Run Matching Algorithm
+  const matchResult = window.SahakaraMatching
+    ? window.SahakaraMatching.findMatch(
+        { lat: donorLat, lon: donorLon, qty, safe_minutes: safeMinutes, food_category: foodCategory },
+        allRecipients,
+        0
+      )
+    : { matchedRecipient: allRecipients[0], stage: 1, distanceKm: 2.4 };
+
+  const matchedRecipient = matchResult.matchedRecipient || allRecipients[0];
+  const stage = matchResult.stage || 1;
+
+  // Generate 4-digit Handover OTP
+  const otp = Math.floor(1000 + Math.random() * 9000).toString();
+
+  const donationPayload = {
+    food: foodDesc,
+    qty: qty,
+    donor_type: donorType,
+    city: city,
+    area: `${establishmentName}, ${address}`,
+    lat: donorLat,
+    lon: donorLon,
+    safe_minutes: safeMinutes,
+    food_category: foodCategory,
+    status: 'Matched',
+    match_id: matchedRecipient ? matchedRecipient.id : null,
+    stage: stage,
+    source: 'Web',
+    otp: otp
+  };
+
+  let createdDonation = { ...donationPayload, id: 'sk-' + Math.random().toString(36).substring(2, 9), created_at: new Date().toISOString() };
+
+  // Insert into Supabase Postgres
+  if (sbClient) {
+    try {
+      const { data, error } = await sbClient.from('donations').insert([donationPayload]).select();
+      if (!error && data && data[0]) {
+        createdDonation = data[0];
+        console.log('[Supabase] Donation inserted successfully:', createdDonation);
+      } else {
+        console.warn('[Supabase] Insert error, fallback to local state:', error?.message);
+      }
+    } catch (err) {
+      console.warn('[Supabase] Network exception on insert:', err.message);
+    }
+  }
+
+  // Update local state if realtime hasn't already fired
+  if (!allDonations.some((d) => d.id === createdDonation.id)) {
+    allDonations.unshift(createdDonation);
+  }
+  currentLiveDispatch = createdDonation;
+
+  // Render Success Modal State
+  document.getElementById('success-ref-id').textContent = '#' + (createdDonation.id || '').substring(0, 8).toUpperCase();
+  document.getElementById('success-otp-code').textContent = otp;
+  document.getElementById('success-matched-recipient').textContent = matchedRecipient ? matchedRecipient.name : 'Verified Rescue Node';
+  document.getElementById('success-ladder-tier').textContent = `Tier 0${stage} (${stage === 1 ? 'Nearby Shelter' : stage === 2 ? 'Regional Shelter' : stage === 3 ? 'Gaushala' : 'Bio-Compost'})`;
+
+  document.getElementById('post-form').hidden = true;
+  document.getElementById('post-success').hidden = false;
+
+  if (submitBtn) {
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = '<span>Broadcast to Rescue Network</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>';
+  }
+
+  renderDispatchCard(createdDonation);
+  renderRealtimeTable();
+  recalculateDashboardMetrics();
+  renderMapData();
+}
+
+/* ==========================================================================
+   3. DRIVER FLOW: PICKED UP (OTP HANDOVER) & DELIVERED
+   ========================================================================== */
+/**
+ * Driver Pickup Action: Requires Donor OTP
+ */
+async function triggerDriverPickup() {
+  if (!currentLiveDispatch) return;
+
+  const currentOtp = currentLiveDispatch.otp || '4419';
+  const entered = prompt(`[Driver Pickup Verification]\nEnter the Donor's 4-Digit Handover OTP (Active Code: ${currentOtp}):`, currentOtp);
+
+  if (!entered) return;
+
+  if (entered.trim() !== currentOtp.trim()) {
+    alert('❌ Invalid OTP! Handover could not be authenticated.');
+    return;
+  }
+
+  // Update status in Supabase
+  if (sbClient && currentLiveDispatch.id && !currentLiveDispatch.id.startsWith('demo-')) {
+    try {
+      const { error } = await sbClient
+        .from('donations')
+        .update({ status: 'Picked up' })
+        .eq('id', currentLiveDispatch.id);
+
+      if (error) console.warn('[Supabase] Error updating status:', error.message);
+    } catch (e) {
+      console.warn('[Supabase] Update exception:', e.message);
+    }
+  }
+
+  currentLiveDispatch.status = 'Picked up';
+  showToast(`✅ OTP ${currentOtp} Authenticated! Food batch picked up.`);
+  renderDispatchCard(currentLiveDispatch);
+  renderRealtimeTable();
+  recalculateDashboardMetrics();
+}
+
+/**
+ * Driver Delivery Action
+ */
+async function triggerDriverDelivery() {
+  if (!currentLiveDispatch) return;
+
+  if (currentLiveDispatch.status !== 'Picked up') {
+    const proceed = confirm('The donation has not been marked as Picked Up yet. Do you want to confirm delivery now?');
+    if (!proceed) return;
+  }
+
+  // Update status in Supabase
+  if (sbClient && currentLiveDispatch.id && !currentLiveDispatch.id.startsWith('demo-')) {
+    try {
+      const { error } = await sbClient
+        .from('donations')
+        .update({ status: 'Delivered' })
+        .eq('id', currentLiveDispatch.id);
+
+      if (error) console.warn('[Supabase] Error marking delivered:', error.message);
+    } catch (e) {
+      console.warn('[Supabase] Delivery update exception:', e.message);
+    }
+  }
+
+  currentLiveDispatch.status = 'Delivered';
+  showToast(`🎉 Food batch delivered to shelter! Meals saved.`);
+  renderDispatchCard(currentLiveDispatch);
+  renderRealtimeTable();
+  recalculateDashboardMetrics();
+}
+
+/* ==========================================================================
+   4. HERO LIVE DISPATCH CARD RENDERER
+   ========================================================================== */
+function renderDispatchCard(dispatch) {
+  if (!dispatch) return;
+
+  const titleEl = document.getElementById('card-food-title');
+  const qtyEl = document.getElementById('card-qty');
+  const donorEl = document.getElementById('card-donor-name');
+  const destEl = document.getElementById('card-destination');
+  const statusBadge = document.getElementById('card-status-badge');
+  const otpCodeEl = document.getElementById('card-otp-code');
+  const stagePill = document.getElementById('card-stage-pill');
+
+  if (titleEl) titleEl.textContent = dispatch.food || 'Surplus Food Batch';
+  if (qtyEl) qtyEl.textContent = `${dispatch.qty} Meals`;
+  if (donorEl) donorEl.textContent = `Posted by ${dispatch.area || 'Commercial Donor'}`;
+  if (otpCodeEl) otpCodeEl.textContent = dispatch.otp || '4419';
+
+  // Find matched recipient details
+  const matched = allRecipients.find((r) => r.id === dispatch.match_id) || allRecipients[0];
+  if (destEl && matched) {
+    destEl.textContent = `${matched.name} (${matched.type.toUpperCase()})`;
+  }
+
+  if (stagePill) {
+    stagePill.textContent = `TIER 0${dispatch.stage || 1} ACTIVE`;
+  }
+
+  // Stepper highlights
+  updateStepperState(dispatch.status);
+}
+
+function updateStepperState(status) {
+  const steps = document.querySelectorAll('.stepper-steps .step-node');
+  if (!steps || steps.length < 4) return;
+
+  steps.forEach((s) => s.classList.remove('completed', 'active'));
+
+  const statusLower = (status || 'posted').toLowerCase();
+
+  if (statusLower === 'posted') {
+    steps[0].classList.add('active');
+  } else if (statusLower === 'matched') {
+    steps[0].classList.add('completed');
+    steps[1].classList.add('active');
+  } else if (statusLower === 'picked up' || statusLower === 'picked_up') {
+    steps[0].classList.add('completed');
+    steps[1].classList.add('completed');
+    steps[2].classList.add('active');
+  } else if (statusLower === 'delivered') {
+    steps[0].classList.add('completed');
+    steps[1].classList.add('completed');
+    steps[2].classList.add('completed');
+    steps[3].classList.add('completed');
+  }
+}
+
+/* ==========================================================================
+   5. DASHBOARD STATS & REALTIME AUDIT TABLE
+   ========================================================================== */
+function recalculateDashboardMetrics() {
+  const mealsEl = document.getElementById('stat-meals-count');
+  const kgEl = document.getElementById('stat-kg-count');
+  const citiesEl = document.getElementById('stat-cities-count');
+  const citiesTitleEl = document.getElementById('stat-cities-title');
+  const dumpsterEl = document.getElementById('stat-dumpster-count');
+
+  // Sum qty where status = 'Delivered'
+  const deliveredDonations = allDonations.filter((d) => (d.status || '').toLowerCase() === 'delivered');
+  const realRescuedMeals = deliveredDonations.reduce((acc, curr) => acc + (Number(curr.qty) || 0), 0);
+  const totalKg = Math.round(realRescuedMeals * 0.4); // 1 meal = 0.4 kg
+  const expiredCount = allDonations.filter((d) => (d.status || '').toLowerCase() === 'expired').length;
+
+  const liveCities = allCities.filter((c) => c.status === 'Live');
+
+  if (mealsEl) mealsEl.textContent = realRescuedMeals.toLocaleString('en-IN');
+  if (kgEl) kgEl.textContent = totalKg.toLocaleString('en-IN');
+  if (citiesEl) citiesEl.textContent = liveCities.length;
+  if (citiesTitleEl && liveCities.length > 0) {
+    citiesTitleEl.textContent = `Live in ${liveCities.map((c) => c.name).slice(0, 3).join(', ')}`;
+  }
+  if (dumpsterEl) dumpsterEl.textContent = expiredCount;
+}
+
+/**
+ * Renders the Live Telemetry / Audit Log table in Card D
+ */
+function renderRealtimeTable() {
+  const tbody = document.getElementById('realtime-donations-tbody');
+  if (!tbody) return;
+
+  if (allDonations.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">No donations posted yet.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = allDonations
+    .slice(0, 10)
+    .map((d) => {
+      const sourceClass = (d.source || 'Web').toLowerCase();
+      const stage = d.stage || 1;
+      const statusClass = (d.status || 'Posted').toLowerCase().replace(' ', '-');
+      const matched = allRecipients.find((r) => r.id === d.match_id);
+      const recipientName = matched ? matched.name : 'Assigning...';
+
+      return `
+        <tr>
+          <td><span class="source-badge ${sourceClass}">${d.source || 'Web'}</span></td>
+          <td><strong>${d.qty} Meals</strong> (${d.food_category || 'cooked'})</td>
+          <td><span class="stage-tag s${stage}">Tier ${stage}</span></td>
+          <td><span class="status-pill ${statusClass}">${d.status || 'Posted'}</span></td>
+          <td title="${recipientName}">${recipientName.length > 22 ? recipientName.substring(0, 22) + '...' : recipientName}</td>
+          <td><code>${d.otp || '----'}</code></td>
+        </tr>
+      `;
+    })
+    .join('');
+}
+
+/* ==========================================================================
+   6. HELPLINE & IVR DIAL-PAD SIMULATOR
+   ========================================================================== */
+function switchHelplineMode(mode) {
+  const tabSms = document.getElementById('tab-btn-sms');
+  const tabIvr = document.getElementById('tab-btn-ivr');
+  const panelSms = document.getElementById('helpline-sms-panel');
+  const panelIvr = document.getElementById('helpline-ivr-panel');
+
+  if (mode === 'sms') {
+    tabSms.classList.add('active');
+    tabIvr.classList.remove('active');
+    panelSms.style.display = 'block';
+    panelIvr.style.display = 'none';
+  } else {
+    tabIvr.classList.add('active');
+    tabSms.classList.remove('active');
+    panelIvr.style.display = 'block';
+    panelSms.style.display = 'none';
+  }
+}
+
+// IVR State Machine
+let ivrStep = 1;
+let ivrBuffer = '';
+let ivrDonation = { qty: 50, food_category: 'cooked rice/dal', area: 'Central Jaipur' };
+
+function initHelplineIVR() {
+  resetIvrCall();
+}
+
+function resetIvrCall() {
+  ivrStep = 1;
+  ivrBuffer = '';
+  const promptEl = document.getElementById('ivr-voice-prompt');
+  const inputEl = document.getElementById('ivr-entered-keys');
+  const stepBadge = document.getElementById('ivr-step-badge');
+
+  if (promptEl) promptEl.innerHTML = '"Namaste! Press <strong>1</strong> to broadcast surplus food rescue."';
+  if (inputEl) inputEl.innerHTML = '&nbsp;';
+  if (stepBadge) stepBadge.textContent = 'Step 1/4';
+}
+
+function playDtmfTone() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(440, ctx.currentTime);
+    gain.gain.setValueAtTime(0.1, ctx.currentTime);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.12);
+  } catch (e) {}
+}
+
+function pressIvrKey(key) {
+  playDtmfTone();
+  const inputEl = document.getElementById('ivr-entered-keys');
+  const promptEl = document.getElementById('ivr-voice-prompt');
+  const stepBadge = document.getElementById('ivr-step-badge');
+
+  if (key === '*') {
+    ivrBuffer = '';
+    if (inputEl) inputEl.textContent = '';
+    return;
+  }
+
+  if (key !== '#') {
+    ivrBuffer += key;
+    if (inputEl) inputEl.textContent = ivrBuffer;
+  }
+
+  // STEP 1: Press 1 to start
+  if (ivrStep === 1 && ivrBuffer.includes('1')) {
+    ivrStep = 2;
+    ivrBuffer = '';
+    if (inputEl) inputEl.textContent = '';
+    if (promptEl) promptEl.innerHTML = '"Please key in the <strong>number of meals/plates</strong>, then press <strong>#</strong> (e.g. 50#)"';
+    if (stepBadge) stepBadge.textContent = 'Step 2/4';
+    return;
+  }
+
+  // STEP 2: Meals quantity + #
+  if (ivrStep === 2 && key === '#') {
+    const plates = parseInt(ivrBuffer, 10) || 50;
+    ivrDonation.qty = plates;
+    ivrStep = 3;
+    ivrBuffer = '';
+    if (inputEl) inputEl.textContent = '';
+    if (promptEl) promptEl.innerHTML = '"Select food type: Press <strong>1 for Cooked</strong>, <strong>2 for Dairy</strong>, <strong>3 for Bakery/Dry</strong>, then press <strong>#</strong>."';
+    if (stepBadge) stepBadge.textContent = 'Step 3/4';
+    return;
+  }
+
+  // STEP 3: Category + #
+  if (ivrStep === 3 && key === '#') {
+    const catCode = ivrBuffer.trim();
+    if (catCode === '2') ivrDonation.food_category = 'dairy';
+    else if (catCode === '3') ivrDonation.food_category = 'dry snacks';
+    else ivrDonation.food_category = 'cooked rice/dal';
+
+    ivrStep = 4;
+    ivrBuffer = '';
+    if (inputEl) inputEl.textContent = '';
+    if (promptEl) promptEl.innerHTML = '"Key in your 6-digit Postal PIN (e.g. <strong>302001</strong>), then press <strong>#</strong>."';
+    if (stepBadge) stepBadge.textContent = 'Step 4/4';
+    return;
+  }
+
+  // STEP 4: Area PIN + # (Final Dispatch)
+  if (ivrStep === 4 && key === '#') {
+    const pin = ivrBuffer.trim() || '302001';
+    ivrDonation.area = `PIN ${pin} Helpline Call`;
+
+    if (promptEl) promptEl.innerHTML = '⚡ <em>"Connecting to nearest shelter... Dispatch confirmed!"</em>';
+    if (stepBadge) stepBadge.textContent = 'DISPATCHED';
+
+    dispatchHelplineDonation(ivrDonation);
+    setTimeout(() => resetIvrCall(), 4500);
+  }
+}
+
+/**
+ * Dispatches a donation created via Helpline or SMS to Supabase
+ */
+async function dispatchHelplineDonation({ qty, food_category, area, source = 'Helpline' }) {
+  const donorLat = 26.9124;
+  const donorLon = 75.7873;
+  const safeMinutes = window.SahakaraMatching?.getDefaultSafeMinutes(food_category) || 240;
+
+  const match = window.SahakaraMatching
+    ? window.SahakaraMatching.findMatch({ lat: donorLat, lon: donorLon, qty, safe_minutes: safeMinutes, food_category }, allRecipients, 0)
+    : { matchedRecipient: allRecipients[0], stage: 1 };
+
+  const matched = match.matchedRecipient || allRecipients[0];
+  const otp = Math.floor(1000 + Math.random() * 9000).toString();
+
+  const payload = {
+    food: `${qty} Meals (${food_category})`,
+    qty: qty,
+    donor_type: 'Restaurant',
+    city: 'Jaipur',
+    area: area || 'Helpline IVR Call-in',
+    lat: donorLat,
+    lon: donorLon,
+    safe_minutes: safeMinutes,
+    food_category: food_category,
+    status: 'Matched',
+    match_id: matched ? matched.id : null,
+    stage: match.stage || 1,
+    source: source,
+    otp: otp
+  };
+
+  let record = { ...payload, id: 'hl-' + Math.random().toString(36).substring(2, 8), created_at: new Date().toISOString() };
+
+  if (sbClient) {
+    try {
+      const { data, error } = await sbClient.from('donations').insert([payload]).select();
+      if (!error && data && data[0]) record = data[0];
+    } catch (e) {}
+  }
+
+  allDonations.unshift(record);
+  currentLiveDispatch = record;
+
+  // Update SMS bubble reply display
+  const bubbleReply = document.getElementById('sms-bubble-reply');
+  if (bubbleReply) {
+    bubbleReply.innerHTML = `DISPATCH: Pickup ${qty} meals. Matched to <strong>${matched.name}</strong>. Driver Vikram assigned. Handover OTP: <strong>${otp}</strong>.`;
+  }
+
+  showToast(`📞 Toll-Free Helpline Dispatch Created: ${qty} meals matched to ${matched.name} (OTP: ${otp})`);
+  renderDispatchCard(record);
+  renderRealtimeTable();
+  recalculateDashboardMetrics();
+  renderMapData();
+}
+
+/**
+ * SMS Presets for testing
+ */
+function simulateSmsPreset(preset) {
+  if (preset === 'amity') {
+    dispatchHelplineDonation({ qty: 50, food_category: 'cooked rice/dal', area: 'Amity Mess (SMS 56161)', source: 'SMS' });
+  } else if (preset === 'banquet') {
+    dispatchHelplineDonation({ qty: 100, food_category: 'cooked rice/dal', area: 'Royal Banquet (SMS 56161)', source: 'SMS' });
+  } else if (preset === 'bakery') {
+    dispatchHelplineDonation({ qty: 30, food_category: 'dry snacks', area: 'C-Scheme Bakery (SMS 56161)', source: 'SMS' });
+  }
+}
+
+/* ==========================================================================
+   7. TIME-WARP SLIDER (CLIENT-SIDE DEMO SIMULATOR)
+   ========================================================================== */
 let timeWarpMinutes = 25;
 let timeWarpAutoPlayInterval = null;
 
@@ -164,17 +874,11 @@ function initLadderCountdown() {
   updateLadderDisplay(timeWarpMinutes);
 }
 
-/**
- * Triggered whenever the user drags the Time-Warp Slider
- */
 function onTimeWarpSliderChange(val) {
   timeWarpMinutes = parseInt(val, 10);
   updateLadderDisplay(timeWarpMinutes);
 }
 
-/**
- * Triggered by 1-click preset buttons (e.g. 15m, 65m, 115m, 180m)
- */
 function setTimeWarp(minutes) {
   timeWarpMinutes = minutes;
   const slider = document.getElementById('timewarp-slider');
@@ -182,9 +886,6 @@ function setTimeWarp(minutes) {
   updateLadderDisplay(minutes);
 }
 
-/**
- * Toggle auto-simulation play across the full 4-hour ladder
- */
 function toggleTimeWarpAutoPlay() {
   const playBtn = document.getElementById('btn-timewarp-play');
   const playIcon = document.getElementById('play-icon');
@@ -192,14 +893,12 @@ function toggleTimeWarpAutoPlay() {
   const slider = document.getElementById('timewarp-slider');
 
   if (timeWarpAutoPlayInterval) {
-    // Stop playback
     clearInterval(timeWarpAutoPlayInterval);
     timeWarpAutoPlayInterval = null;
     playBtn.classList.remove('playing');
     playIcon.textContent = '▶';
     playText.textContent = 'Auto Sim';
   } else {
-    // Start auto-playback
     if (timeWarpMinutes >= 235) {
       timeWarpMinutes = 0;
       if (slider) slider.value = 0;
@@ -215,16 +914,12 @@ function toggleTimeWarpAutoPlay() {
         if (slider) slider.value = timeWarpMinutes;
         updateLadderDisplay(timeWarpMinutes);
       } else {
-        // Reached end of ladder
         toggleTimeWarpAutoPlay();
       }
     }, 350);
   }
 }
 
-/**
- * Updates UI tiers, badges, and colors according to simulated elapsed time
- */
 function updateLadderDisplay(mins) {
   const displayEl = document.getElementById('warp-time-display');
   const badgeEl = document.getElementById('warp-tier-badge');
@@ -242,619 +937,269 @@ function updateLadderDisplay(mins) {
 
   if (displayEl) displayEl.textContent = `${mins} min`;
 
-  // Reset preset active states
-  [p1, p2, p3, p4].forEach(p => p && p.classList.remove('active'));
+  [p1, p2, p3, p4].forEach((p) => p && p.classList.remove('active'));
+  [row1, row2, row3, row4].forEach((r) => r && r.classList.remove('active-tier', 'passed-tier'));
 
-  // Reset all row classes
-  [row1, row2, row3, row4].forEach(r => {
-    if (r) {
-      r.classList.remove('active-tier', 'passed-tier');
-    }
-  });
+  // Calculate Stage via SahakaraMatching
+  const stage = window.SahakaraMatching ? window.SahakaraMatching.currentStage(mins, 240) : mins <= 45 ? 1 : mins <= 90 ? 2 : mins <= 150 ? 3 : 4;
 
-  if (mins <= 45) {
-    // TIER 1: Human Grade - Nearby Shelter (5km)
+  if (stage === 1) {
     if (badgeEl) {
       badgeEl.className = 'timewarp-tier-badge tier-1-badge';
       badgeEl.textContent = 'Tier 1: Human Grade (Fresh)';
     }
     if (p1) p1.classList.add('active');
-
     if (row1) row1.classList.add('active-tier');
     if (tier1Timer) tier1Timer.textContent = `${45 - mins}m left`;
-
-    updateHeroCardStatus(1, 'Nearby Orphanage & Shelter (3.2km)', 'Hot & Fresh &bull; 100% Edible');
-
-  } else if (mins <= 90) {
-    // TIER 2: Regional Shelter / Bulk Re-heating (18km)
+    updateHeroCardRecipientName(1, 'Ananda Seva Ashram (Node 04)');
+  } else if (stage === 2) {
     if (badgeEl) {
       badgeEl.className = 'timewarp-tier-badge tier-2-badge';
       badgeEl.textContent = 'Tier 2: Regional Shelter Hub';
     }
     if (p2) p2.classList.add('active');
-
     if (row1) row1.classList.add('passed-tier');
     if (row2) row2.classList.add('active-tier');
-
-    updateHeroCardStatus(2, 'Jaipur Rain Basera Central Hub (14.8km)', 'Re-heating Container &bull; Secondary Radius');
-
-  } else if (mins <= 150) {
-    // TIER 3: Gaushala / Animal Shelter
+    updateHeroCardRecipientName(2, 'Akshaya Patra Foundation (Regional Hub)');
+  } else if (stage === 3) {
     if (badgeEl) {
       badgeEl.className = 'timewarp-tier-badge tier-3-badge';
       badgeEl.textContent = 'Tier 3: Animal Shelter (Gaushala)';
     }
     if (p3) p3.classList.add('active');
-
     if (row1) row1.classList.add('passed-tier');
     if (row2) row2.classList.add('passed-tier');
     if (row3) row3.classList.add('active-tier');
-
-    updateHeroCardStatus(3, 'Shree Krishna Gaushala (8.1km)', 'Quality-Tested Organic Cattle Feed');
-
+    updateHeroCardRecipientName(3, 'Shree Govind Dev Ji Gaushala (Livestock)');
   } else {
-    // TIER 4: Municipal Biomethanation & Compost
     if (badgeEl) {
       badgeEl.className = 'timewarp-tier-badge tier-4-badge';
       badgeEl.textContent = 'Tier 4: Zero-Landfill Compost';
     }
     if (p4) p4.classList.add('active');
-
     if (row1) row1.classList.add('passed-tier');
     if (row2) row2.classList.add('passed-tier');
     if (row3) row3.classList.add('passed-tier');
     if (row4) row4.classList.add('active-tier');
-
-    updateHeroCardStatus(4, 'JMC Biomethanation Facility', 'Zero Organic Waste &bull; Soil Enrichment');
+    updateHeroCardRecipientName(4, 'Durgapura Municipal Bio-Compost Hub');
   }
 }
 
-/**
- * Dynamic feedback in live dispatch card when Time-Warp moves
- */
-function updateHeroCardStatus(tierNum, recipient, notes) {
+function updateHeroCardRecipientName(tierNum, recipientName) {
   const destEl = document.getElementById('card-destination');
   const stagePill = document.getElementById('card-stage-pill');
-  if (destEl) destEl.textContent = recipient;
-  if (stagePill) {
-    stagePill.textContent = `TIER ${tierNum} ACTIVE`;
-  }
+  if (destEl) destEl.textContent = recipientName;
+  if (stagePill) stagePill.textContent = `TIER ${tierNum} ACTIVE`;
 }
 
 /* ==========================================================================
-   2. Real-time Impact Stats Counter
+   8. INTERACTIVE LEAFLET.JS MAP & OSRM RADAR
    ========================================================================== */
-function initStatsCounter() {
-  const mealsEl = document.getElementById('stat-meals-count');
-  const kgEl = document.getElementById('stat-kg-count');
-  if (!mealsEl) return;
-
-  let currentMeals = 1482930;
-  let currentKg = 593170;
-
-  mealsEl.textContent = currentMeals.toLocaleString('en-IN');
-  if (kgEl) kgEl.textContent = currentKg.toLocaleString('en-IN');
-
-  // Live real-time simulation increments
-  setInterval(() => {
-    const mealInc = Math.floor(Math.random() * 6) + 2;
-    const kgInc = Math.round(mealInc * 0.45);
-    
-    currentMeals += mealInc;
-    currentKg += kgInc;
-
-    mealsEl.textContent = currentMeals.toLocaleString('en-IN');
-    if (kgEl) kgEl.textContent = currentKg.toLocaleString('en-IN');
-  }, 10000);
-}
-
-/* ==========================================================================
-   3. Render Hero Dispatch Mockup Card
-   ========================================================================== */
-function renderDispatchCard(dispatch) {
-  currentLiveDispatch = dispatch;
-  
-  // URL Bar and Card Kicker
-  const urlEl = document.querySelector('.mockup-url-bar span');
-  if (urlEl) urlEl.textContent = `sahakara.org/dispatch/live/${dispatch.tracking_id}`;
-
-  const kickerEl = document.querySelector('.donor-details .card-kicker');
-  if (kickerEl) kickerEl.textContent = `ACTIVE RESCUE BATCH #${dispatch.tracking_id}`;
-
-  const titleEl = document.querySelector('.donor-details .food-title');
-  if (titleEl) titleEl.textContent = dispatch.food_title || `${dispatch.quantity} surplus meals`;
-
-  const sourceEl = document.querySelector('.donor-details .donor-source');
-  if (sourceEl) {
-    sourceEl.innerHTML = `Posted by <strong>${dispatch.donor_name}</strong> &bull; ${dispatch.pickup_address ? dispatch.pickup_address.split(',')[0] : 'Jaipur Cluster'}`;
-  }
-
-  const tempBadgeEl = document.querySelector('.temp-badge span');
-  if (tempBadgeEl) {
-    tempBadgeEl.textContent = `${dispatch.temp_celsius || 64}°C Safe Temp`;
-  }
-
-  // Update Stepper
-  updateStepperState(dispatch.status);
-
-  // Update Meta Grid
-  const shelterValueEl = document.querySelector('.meta-box:nth-child(1) .meta-value');
-  const shelterSubEl = document.querySelector('.meta-box:nth-child(1) .meta-sub');
-  if (shelterValueEl && dispatch.assigned_shelter) {
-    shelterValueEl.textContent = dispatch.assigned_shelter;
-  }
-  if (shelterSubEl) {
-    shelterSubEl.textContent = `${dispatch.shelter_distance_km || 2.4} km away • Capacity confirmed for ${dispatch.meals_count || 40} meals`;
-  }
-
-  const driverValueEl = document.querySelector('.meta-box:nth-child(2) .meta-value');
-  const driverSubEl = document.querySelector('.meta-box:nth-child(2) .meta-sub');
-  if (driverValueEl && dispatch.assigned_driver) {
-    driverValueEl.textContent = dispatch.assigned_driver;
-  }
-  if (driverSubEl) {
-    const eta = dispatch.driver_eta_mins > 0 ? `Arriving at shelter in ${dispatch.driver_eta_mins} mins` : 'Delivered';
-    driverSubEl.textContent = `${eta} • OTP: ${dispatch.otp_code}`;
-  }
-}
-
-function updateStepperState(status) {
-  const steps = document.querySelectorAll('.stepper-steps .step-node');
-  if (!steps || steps.length < 4) return;
-
-  const statuses = ['posted', 'matched', 'picked_up', 'delivered'];
-  const currentIndex = statuses.indexOf(status);
-
-  steps.forEach((step, idx) => {
-    step.className = 'step-node';
-    if (idx < currentIndex) {
-      step.classList.add('completed');
-      const circle = step.querySelector('.step-circle');
-      if (circle) circle.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>`;
-    } else if (idx === currentIndex) {
-      step.classList.add('active');
-      const circle = step.querySelector('.step-circle');
-      if (circle) circle.innerHTML = `<span class="active-dot"></span>`;
-    } else {
-      const circle = step.querySelector('.step-circle');
-      if (circle) circle.innerHTML = '';
-    }
-  });
-
-  const lineFilled = document.querySelector('.stepper-line-filled');
-  if (lineFilled) {
-    const percentages = [0, 33, 66, 100];
-    lineFilled.style.width = `${percentages[Math.max(0, currentIndex)]}%`;
-  }
-}
-
-/* ==========================================================================
-   4. Real-Time Jaipur Map (Leaflet.js + OpenStreetMap + OSRM)
-   ========================================================================== */
-async function initJaipurMap() {
+function initJaipurMap() {
   const mapContainer = document.getElementById('jaipur-live-map');
-  if (!mapContainer || typeof L === 'undefined') return;
+  if (!mapContainer) return;
+  
+  if (jaipurMap) {
+    jaipurMap.invalidateSize();
+    return;
+  }
 
-  // Center on Jaipur / NH-11C corridor
-  jaipurMap = L.map('jaipur-live-map', {
-    center: [26.9600, 75.8500],
-    zoom: 11,
-    zoomControl: true,
-    attributionControl: false
-  });
-
-  // OpenStreetMap Tile Layer (no API key needed)
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-  }).addTo(jaipurMap);
-
-  // Render Nodes & Drivers
-  await renderMapData();
-
-  // Telemetry simulation every 3 seconds
-  setInterval(simulateDriverMovement, 3000);
-}
-
-/**
- * Fetch real road route geometry from free public OSRM API
- * Falls back to straight polyline if OSRM fails or is slow
- */
-async function fetchOSRMRoute(waypoints) {
-  if (!waypoints || waypoints.length < 2) return { success: false, coords: [] };
-
-  const coordParam = waypoints.map(pt => `${pt[1]},${pt[0]}`).join(';');
-  const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${coordParam}?overview=full&geometries=geojson`;
+  if (typeof L === 'undefined' || !L.map) {
+    console.warn('[Map] Leaflet library still loading, retrying...');
+    setTimeout(initJaipurMap, 150);
+    return;
+  }
 
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 4000);
+    jaipurMap = L.map('jaipur-live-map', {
+      center: [27.0500, 75.8800],
+      zoom: 11,
+      zoomControl: true,
+      scrollWheelZoom: false
+    });
 
-    const res = await fetch(osrmUrl, { signal: controller.signal });
-    clearTimeout(timeoutId);
+    // Pure Leaflet with OpenStreetMap tiles (no Google Maps / no API key)
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap contributors</a>'
+    }).addTo(jaipurMap);
 
-    if (res.ok) {
-      const data = await res.json();
-      if (data.code === 'Ok' && data.routes && data.routes.length > 0 && data.routes[0].geometry) {
-        // Convert [lng, lat] to [lat, lng]
-        const roadCoords = data.routes[0].geometry.coordinates.map(coord => [coord[1], coord[0]]);
-        return { success: true, coords: roadCoords };
-      }
-    }
+    renderMapData();
+
+    // Repeated invalidateSize triggers for instant and reliable rendering
+    [50, 200, 500, 1200, 2500].forEach((ms) => {
+      setTimeout(() => {
+        if (jaipurMap) jaipurMap.invalidateSize();
+      }, ms);
+    });
   } catch (err) {
-    console.warn('OSRM road route request failed, falling back to straight polyline:', err);
+    console.warn('[Map] Leaflet initialization error:', err.message);
   }
-
-  // Straight line fallback
-  return { success: false, coords: waypoints };
 }
+
+window.addEventListener('load', () => {
+  initJaipurMap();
+});
+window.addEventListener('resize', () => {
+  if (jaipurMap) jaipurMap.invalidateSize();
+});
 
 async function renderMapData() {
   if (!jaipurMap) return;
 
   // Clear existing markers
-  mapMarkers.forEach(m => jaipurMap.removeLayer(m.marker));
+  mapMarkers.forEach((m) => jaipurMap.removeLayer(m));
   mapMarkers = [];
+  if (activeRoutePolyline) jaipurMap.removeLayer(activeRoutePolyline);
 
-  if (activeRoutePolyline) {
+  const customIcon = (type) => {
+    const color = type === 'shelter' ? '#0F7B5F' : type === 'gaushala' ? '#EA580C' : type === 'compost' ? '#6B7280' : type === 'donor' ? '#D97706' : '#2563EB';
+    const label = type === 'shelter' ? '🏠' : type === 'gaushala' ? '🐄' : type === 'compost' ? '🌱' : type === 'donor' ? '🍛' : '🛵';
+
+    return L.divIcon({
+      className: 'custom-map-pin',
+      html: `<div style="background:${color};width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#FFF;border:2.5px solid #FFF;box-shadow:0 3px 10px rgba(0,0,0,0.3);font-size:14px;">${label}</div>`,
+      iconSize: [32, 32],
+      iconAnchor: [16, 16],
+      popupAnchor: [0, -18]
+    });
+  };
+
+  const boundsLatLngs = [];
+
+  // 1. Add Active Donor Marker (Amity University Central Mess)
+  const donorCoords = [27.1729, 75.9542];
+  if (activeFilter === 'all' || activeFilter === 'donor') {
+    const donorMarker = L.marker(donorCoords, { icon: customIcon('donor') }).addTo(jaipurMap).bindPopup(`
+      <div style="font-family:sans-serif;font-size:12px;min-width:180px;">
+        <strong style="font-size:13px;color:#111827;">Amity Campus Central Mess</strong><br>
+        <span style="color:#D97706;font-weight:700;">DONOR KITCHEN</span><br>
+        <span>Surplus Batch: <strong>40 Hot Meals</strong></span><br>
+        <small style="color:#6B7280;">NH-11C, Kant Kalwar, Jaipur</small>
+      </div>
+    `);
+    mapMarkers.push(donorMarker);
+    boundsLatLngs.push(donorCoords);
+  }
+
+  // 2. Add Active Volunteer Driver Marker (Vikram R. EV Carrier)
+  const driverCoords = [27.0500, 75.8900];
+  if (activeFilter === 'all' || activeFilter === 'driver') {
+    const driverMarker = L.marker(driverCoords, { icon: customIcon('driver') }).addTo(jaipurMap).bindPopup(`
+      <div style="font-family:sans-serif;font-size:12px;min-width:180px;">
+        <strong style="font-size:13px;color:#111827;">Driver Vikram R. (EV-4419)</strong><br>
+        <span style="color:#2563EB;font-weight:700;">ACTIVE EV CARRIER</span><br>
+        <span>En route &bull; Temp: <strong>64°C</strong> (Hot Bag)</span><br>
+        <small style="color:#6B7280;">Speed: 32 km/h &bull; Battery: 86%</small>
+      </div>
+    `);
+    mapMarkers.push(driverMarker);
+    boundsLatLngs.push(driverCoords);
+  }
+
+  // 3. Add Recipients (Shelters, Gaushalas, Compost)
+  const shelterCoords = [26.9248, 75.8267]; // Ananda Seva Ashram
+  allRecipients.forEach((rec) => {
+    if (activeFilter === 'all' || activeFilter === rec.type) {
+      const coords = [rec.lat, rec.lon];
+      const marker = L.marker(coords, { icon: customIcon(rec.type) }).addTo(jaipurMap).bindPopup(`
+        <div style="font-family:sans-serif;font-size:12px;min-width:180px;">
+          <strong style="color:#111827;font-size:13px;">${rec.name}</strong><br>
+          <span style="color:#0F7B5F;font-weight:700;">${rec.type.toUpperCase()} NODE</span><br>
+          <span>Intake Capacity: <strong>${rec.capacity} meals</strong></span><br>
+          <small style="color:#6B7280;">${rec.needs_note || rec.address || ''}</small>
+        </div>
+      `);
+      mapMarkers.push(marker);
+      boundsLatLngs.push(coords);
+    }
+  });
+
+  // 4. Draw Real Road Route using Public OSRM API (with straight line fallback)
+  drawOsrmRoute(donorCoords, driverCoords, shelterCoords);
+
+  // Fit bounds if we have points
+  if (boundsLatLngs.length > 0) {
+    try {
+      const bounds = L.latLngBounds(boundsLatLngs);
+      jaipurMap.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
+    } catch (e) {}
+  }
+}
+
+/**
+ * Fetches real road coordinates from free public OSRM API (router.project-osrm.org)
+ * Falls back to a direct straight line polyline if network/API fails.
+ */
+async function drawOsrmRoute(donor, driver, shelter) {
+  const straightLineFallback = [donor, driver, shelter];
+
+  try {
+    // OSRM expects coordinates in {longitude},{latitude} format
+    const coordinatesStr = `${donor[1]},${donor[0]};${driver[1]},${driver[0]};${shelter[1]},${shelter[0]}`;
+    const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${coordinatesStr}?overview=full&geometries=geojson`;
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 4000); // 4 second timeout
+
+    const response = await fetch(osrmUrl, { signal: controller.signal });
+    clearTimeout(timeoutId);
+
+    if (!response.ok) throw new Error(`OSRM HTTP ${response.status}`);
+    const data = await response.json();
+
+    if (data && data.routes && data.routes[0] && data.routes[0].geometry) {
+      // GeoJSON is [lon, lat] -> convert to Leaflet [lat, lon]
+      const routeLatLngs = data.routes[0].geometry.coordinates.map((c) => [c[1], c[0]]);
+
+      if (activeRoutePolyline && jaipurMap) {
+        jaipurMap.removeLayer(activeRoutePolyline);
+      }
+
+      activeRoutePolyline = L.polyline(routeLatLngs, {
+        color: '#0F7B5F',
+        weight: 5,
+        opacity: 0.85,
+        lineJoin: 'round'
+      }).addTo(jaipurMap);
+      return;
+    }
+  } catch (err) {
+    console.warn('[OSRM Routing] Road route unavailable, using straight line fallback:', err.message);
+  }
+
+  // Fallback to straight polyline
+  if (activeRoutePolyline && jaipurMap) {
     jaipurMap.removeLayer(activeRoutePolyline);
-    activeRoutePolyline = null;
   }
-
-  // 1. Render Verified Nodes
-  let donorNode = null;
-  let shelterNode = null;
-
-  JAIPUR_NODES.forEach(node => {
-    const markerIcon = createNodeIcon(node.type);
-    const marker = L.marker([node.lat, node.lng], { icon: markerIcon }).addTo(jaipurMap);
-
-    const popupHtml = `
-      <div class="map-popup-box">
-        <span class="pop-tag">${node.type.toUpperCase()} • ${node.category || ''}</span>
-        <strong>${node.name}</strong>
-        <p><strong>Address:</strong> ${node.address}</p>
-        <p><strong>Capacity:</strong> ${node.capacity_meals} meals</p>
-        <p><strong>Status:</strong> <span style="color:#0F7B5F;font-weight:600;">${node.status}</span></p>
-        <p><strong>Phone:</strong> ${node.phone}</p>
-      </div>
-    `;
-    marker.bindPopup(popupHtml);
-
-    mapMarkers.push({ type: node.type, marker, data: node });
-
-    if (node.type === 'donor' && !donorNode) donorNode = node;
-    if (node.id === 'node-ananda' || (node.type === 'shelter' && !shelterNode)) shelterNode = node;
-  });
-
-  // 2. Render Active Volunteer Drivers
-  let primaryDriver = null;
-  JAIPUR_DRIVERS.forEach(driver => {
-    const driverIcon = createDriverIcon();
-    const marker = L.marker([driver.lat, driver.lng], { icon: driverIcon }).addTo(jaipurMap);
-
-    const popupHtml = `
-      <div class="map-popup-box">
-        <span class="pop-tag">VOLUNTEER DRIVER • ${driver.vehicle_type}</span>
-        <strong>${driver.name}</strong>
-        <p><strong>Vehicle:</strong> ${driver.vehicle_number}</p>
-        <p><strong>Speed:</strong> ${driver.speed_kmh} km/h • <strong>Battery:</strong> ${driver.battery_level}</p>
-        <p><strong>Cargo Temp:</strong> <span style="color:#0F7B5F;font-weight:600;">${driver.cargo_temp_celsius}°C (Safe)</span></p>
-        <p><strong>Status:</strong> ${driver.status}</p>
-      </div>
-    `;
-    marker.bindPopup(popupHtml);
-
-    mapMarkers.push({ type: 'driver', marker, data: driver, isDriver: true });
-
-    if (!primaryDriver) primaryDriver = driver;
-  });
-
-  // 3. Draw Road Polyline with OSRM
-  if (donorNode && primaryDriver && shelterNode) {
-    const waypoints = [
-      [donorNode.lat, donorNode.lng],
-      [primaryDriver.lat, primaryDriver.lng],
-      [shelterNode.lat, shelterNode.lng]
-    ];
-
-    const routeResult = await fetchOSRMRoute(waypoints);
-
-    activeRoutePolyline = L.polyline(routeResult.coords, {
-      color: '#C04A26',
-      weight: 4,
-      opacity: 0.9,
-      dashArray: routeResult.success ? null : '6, 6',
-      smoothFactor: 1
-    }).addTo(jaipurMap);
-  }
-
-  // Apply active category filter
-  applyMarkerFilter();
-
-  // Update HUD
-  if (JAIPUR_DRIVERS[0]) {
-    updateTelemetryHud(JAIPUR_DRIVERS[0]);
-  }
+  activeRoutePolyline = L.polyline(straightLineFallback, {
+    color: '#0F7B5F',
+    weight: 4,
+    dashArray: '8, 8',
+    opacity: 0.85
+  }).addTo(jaipurMap);
 }
 
-function simulateDriverMovement() {
-  const driver = JAIPUR_DRIVERS[0];
-  if (!driver) return;
-
-  // Move driver smoothly towards Bani Park Shelter (26.9248, 75.8267)
-  const targetLat = 26.9248;
-  const targetLng = 75.8267;
-
-  const latDiff = (targetLat - driver.lat) * 0.05;
-  const lngDiff = (targetLng - driver.lng) * 0.05;
-
-  driver.lat += latDiff;
-  driver.lng += lngDiff;
-
-  // Slight speed & temp variations
-  driver.speed_kmh = Math.floor(38 + Math.random() * 8);
-  driver.cargo_temp_celsius = Math.floor(63 + Math.random() * 2);
-
-  if (driver.eta_mins > 1) {
-    driver.eta_mins = Math.max(1, driver.eta_mins - 0.2);
-  }
-
-  // Update Marker on Map
-  const item = mapMarkers.find(m => m.isDriver && m.data.id === driver.id);
-  if (item && item.marker) {
-    item.marker.setLatLng([driver.lat, driver.lng]);
-  }
-
-  updateTelemetryHud(driver);
-}
-
-function updateTelemetryHud(driver) {
-  const nameEl = document.getElementById('hud-driver-name');
-  const speedEl = document.getElementById('hud-speed');
-  const tempEl = document.getElementById('hud-temp');
-  const etaEl = document.getElementById('hud-eta');
-  const batteryEl = document.getElementById('hud-battery');
-  const batchTagEl = document.getElementById('hud-batch-tag');
-
-  if (nameEl) nameEl.textContent = driver.name.split(' (')[0];
-  if (speedEl) speedEl.textContent = `${driver.speed_kmh} km/h`;
-  if (tempEl) tempEl.textContent = `${driver.cargo_temp_celsius}°C`;
-  if (etaEl) etaEl.textContent = `${Math.round(driver.eta_mins)} mins`;
-  if (batteryEl) batteryEl.textContent = driver.battery_level;
-  if (batchTagEl) batchTagEl.textContent = `#${driver.active_batch || 'SK-8821'}`;
-}
-
-function createNodeIcon(type) {
-  const iconClass = `custom-map-marker marker-${type}`;
-  let symbol = '🏠';
-  if (type === 'donor') symbol = '🍱';
-  if (type === 'shelter') symbol = '🤝';
-  if (type === 'gaushala') symbol = '🐄';
-  if (type === 'compost') symbol = '🌱';
-
-  return L.divIcon({
-    className: iconClass,
-    html: `<span style="font-size:14px;">${symbol}</span>`,
-    iconSize: [30, 30],
-    iconAnchor: [15, 15],
-    popupAnchor: [0, -15]
-  });
-}
-
-function createDriverIcon() {
-  return L.divIcon({
-    className: 'custom-map-marker marker-driver',
-    html: `<span style="font-size:13px;">⚡</span>`,
-    iconSize: [28, 28],
-    iconAnchor: [14, 14],
-    popupAnchor: [0, -14]
-  });
-}
-
-function filterMapNodes(category, btnElement) {
-  activeFilter = category;
-
-  // Update button active state
-  const chips = document.querySelectorAll('#map-category-filters .map-chip');
-  chips.forEach(c => c.classList.remove('active'));
-  if (btnElement) btnElement.classList.add('active');
-
-  applyMarkerFilter();
-}
-
-function applyMarkerFilter() {
-  mapMarkers.forEach(item => {
-    if (activeFilter === 'all' || item.type === activeFilter) {
-      if (!jaipurMap.hasLayer(item.marker)) {
-        jaipurMap.addLayer(item.marker);
-      }
-    } else {
-      if (jaipurMap.hasLayer(item.marker)) {
-        jaipurMap.removeLayer(item.marker);
-      }
-    }
-  });
+function filterMapNodes(filter, element) {
+  activeFilter = filter;
+  document.querySelectorAll('.map-chip').forEach((c) => c.classList.remove('active'));
+  if (element) element.classList.add('active');
+  renderMapData();
 }
 
 /* ==========================================================================
-   5. City Chips Search / Filter
+   9. AUTHENTICATION (EMAIL OTP / PASSWORD / JWT)
    ========================================================================== */
-function filterCities() {
-  const query = document.getElementById('city-search').value.toLowerCase().trim();
-  const chips = document.querySelectorAll('#city-chips-grid .city-chip');
-
-  chips.forEach(chip => {
-    const cityName = chip.getAttribute('data-name') || '';
-    if (cityName.includes(query) || query === '') {
-      chip.style.display = 'flex';
-    } else {
-      chip.style.display = 'none';
-    }
-  });
-}
-
-/* ==========================================================================
-   6. Post Surplus Food & Node Registration Modal
-   ========================================================================== */
-function openPostModal(category = '') {
-  currentModalCategory = category;
-  const modal = document.getElementById('modal-post');
-  const form = document.getElementById('post-form');
-  const success = document.getElementById('post-success');
-  const title = document.getElementById('modal-title');
-  const submitBtn = document.getElementById('btn-submit-post');
-
-  if (category === 'shelter') {
-    title.textContent = 'Register Verified Shelter Node (Jaipur)';
-    submitBtn.textContent = 'Register Shelter Node';
-  } else if (category === 'driver') {
-    title.textContent = 'Join Volunteer Transport Network (Jaipur)';
-    submitBtn.textContent = 'Register as Driver';
-  } else if (category === 'gaushala') {
-    title.textContent = 'Register Gaushala Node (Jaipur)';
-    submitBtn.textContent = 'Register Gaushala';
-  } else if (category === 'compost') {
-    title.textContent = 'Register Bio-Compost Facility';
-    submitBtn.textContent = 'Register Facility';
-  } else {
-    title.textContent = 'Post Surplus Food (Jaipur Live Cluster)';
-    submitBtn.textContent = 'Broadcast to Nearby Shelters';
-  }
-
-  form.hidden = false;
-  success.hidden = true;
-  modal.hidden = false;
-  document.body.style.overflow = 'hidden';
-}
-
-function closePostModal() {
-  const modal = document.getElementById('modal-post');
-  modal.hidden = true;
-  document.body.style.overflow = '';
-}
-
-function handlePostSubmit(e) {
-  e.preventDefault();
-  const form = document.getElementById('post-form');
-  const success = document.getElementById('post-success');
-  const submitBtn = document.getElementById('btn-submit-post');
-
-  const donorType = document.getElementById('post-donor-type').value;
-  const donorName = document.getElementById('post-donor-name').value || 'Amity Jaipur Food Partner';
-  const phone = document.getElementById('post-phone').value || '+91 98290 12345';
-  const pincode = document.getElementById('post-pincode').value || '302001';
-  const foodType = document.getElementById('post-food-type').value || 'Hot Cooked Meals';
-  const quantity = document.getElementById('post-qty').value || '50 meals';
-  const deadline = document.getElementById('post-deadline').value || '2 hours';
-  const address = document.getElementById('post-address').value || 'Jaipur City Hub';
-
-  submitBtn.textContent = 'Broadcasting to Jaipur Node Cluster...';
-  submitBtn.disabled = true;
-
-  setTimeout(() => {
-    submitBtn.textContent = 'Broadcast to Nearby Shelters';
-    submitBtn.disabled = false;
-
-    if (currentModalCategory && currentModalCategory !== 'donor') {
-      // Partner Node Registration
-      const newNode = {
-        id: `node-user-${Date.now()}`,
-        type: currentModalCategory,
-        name: donorName,
-        category: `${currentModalCategory.toUpperCase()} Partner Node`,
-        lat: 26.9124 + (Math.random() - 0.5) * 0.08,
-        lng: 75.7873 + (Math.random() - 0.5) * 0.08,
-        address: `${address}, Pin: ${pincode}`,
-        capacity_meals: 100,
-        status: 'Verified & Active in Cluster',
-        phone
-      };
-
-      JAIPUR_NODES.push(newNode);
-
-      const successHeading = success.querySelector('.success-heading');
-      const successPara = success.querySelector('.success-paragraph');
-      if (successHeading) successHeading.textContent = 'Node Verified & Registered';
-      if (successPara) successPara.textContent = `${donorName} has been enrolled in the Jaipur food recovery network.`;
-
-      form.hidden = true;
-      success.hidden = false;
-      renderMapData();
-    } else {
-      // Surplus Food Posting
-      const newTrackingId = `SK-${Math.floor(1000 + Math.random() * 9000)}`;
-      const mealCount = parseInt(quantity, 10) || 50;
-
-      const newDispatch = {
-        tracking_id: newTrackingId,
-        donor_name: donorName,
-        food_title: `${quantity} ${foodType}`,
-        quantity,
-        meals_count: mealCount,
-        temp_celsius: 65,
-        status: 'matched',
-        pickup_address: address,
-        assigned_shelter: 'Ananda Seva Ashram (Node 04)',
-        shelter_distance_km: 2.1,
-        assigned_driver: 'Driver Vikram R. (EV Cargo-4419)',
-        driver_eta_mins: 18,
-        otp_code: `${Math.floor(1000 + Math.random() * 9000)}`
-      };
-
-      // Add as donor node on map
-      const newDonorNode = {
-        id: `donor-${newTrackingId}`,
-        type: 'donor',
-        name: donorName,
-        category: donorType,
-        lat: 26.9300 + (Math.random() - 0.5) * 0.06,
-        lng: 75.8000 + (Math.random() - 0.5) * 0.06,
-        address,
-        capacity_meals: mealCount,
-        status: `Surplus Active (#${newTrackingId})`,
-        phone
-      };
-
-      JAIPUR_NODES.unshift(newDonorNode);
-
-      const successHeading = success.querySelector('.success-heading');
-      const successPara = success.querySelector('.success-paragraph');
-      
-      if (successHeading) successHeading.textContent = `Dispatch Broadcast #${newTrackingId} Active`;
-      if (successPara) {
-        successPara.innerHTML = `Surplus reference <strong>#${newTrackingId}</strong> matched to <strong>${newDispatch.assigned_shelter}</strong>. Driver <strong>${newDispatch.assigned_driver}</strong> assigned. Pickup OTP: <strong>${newDispatch.otp_code}</strong>.`;
-      }
-
-      // Live update Hero Card & Map
-      renderDispatchCard(newDispatch);
-      renderMapData();
-
-      form.hidden = true;
-      success.hidden = false;
-    }
-  }, 600);
-}
-
-/* ==========================================================================
-   7. Authentication, Free Email OTP & State Management
-   ========================================================================== */
-
 const AUTH_API_BASE = 'http://localhost:3001/api/auth';
-
 let authState = {
   token: localStorage.getItem('sahakara_auth_token') || null,
   user: JSON.parse(localStorage.getItem('sahakara_auth_user') || 'null')
 };
-
 let currentSignupData = {};
 let currentLoginEmail = '';
 let loginOtpTimer = null;
 let signupOtpTimer = null;
 
-/**
- * Initializes Authentication State on page load
- */
 async function initAuth() {
   renderNavAuthState();
   setupOtpDigitInputs('login-otp-inputs');
@@ -863,7 +1208,7 @@ async function initAuth() {
   if (authState.token) {
     try {
       const res = await fetch(`${AUTH_API_BASE}/me`, {
-        headers: { 'Authorization': `Bearer ${authState.token}` }
+        headers: { Authorization: `Bearer ${authState.token}` }
       });
       if (res.ok) {
         const data = await res.json();
@@ -872,19 +1217,11 @@ async function initAuth() {
           localStorage.setItem('sahakara_auth_user', JSON.stringify(data.user));
           renderNavAuthState();
         }
-      } else {
-        // Token invalid or expired
-        logout(false);
       }
-    } catch (e) {
-      console.warn('[Auth] Running offline or backend unavailable; preserving cached session:', e.message);
-    }
+    } catch (e) {}
   }
 }
 
-/**
- * Updates the Navbar according to whether user is logged in
- */
 function renderNavAuthState() {
   const container = document.getElementById('nav-actions-container');
   if (!container) return;
@@ -892,7 +1229,12 @@ function renderNavAuthState() {
   if (authState.user) {
     const roleEmoji = authState.user.role === 'donor' ? '🍛' : authState.user.role === 'shelter' ? '🏠' : '🛵';
     const roleName = (authState.user.role || 'Partner').toUpperCase();
-    const initials = (authState.user.name || 'User').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    const initials = (authState.user.name || 'User')
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .substring(0, 2)
+      .toUpperCase();
 
     container.innerHTML = `
       <div class="user-nav-profile" title="Logged in as ${authState.user.name} (${authState.user.email})">
@@ -901,7 +1243,7 @@ function renderNavAuthState() {
           <span class="user-nav-name">${authState.user.name}</span>
           <span class="user-nav-role">${roleEmoji} ${roleName}</span>
         </div>
-        <button type="button" class="btn-nav-logout" onclick="logout(true)" title="Sign out" aria-label="Sign out">
+        <button type="button" class="btn-nav-logout" onclick="logout(true)" title="Sign out">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
         </button>
       </div>
@@ -935,8 +1277,6 @@ function closeSignInModal() {
   if (!modal) return;
   modal.hidden = true;
   document.body.style.overflow = '';
-  clearInterval(loginOtpTimer);
-  clearInterval(signupOtpTimer);
 }
 
 function switchAuthTab(tab) {
@@ -948,19 +1288,15 @@ function switchAuthTab(tab) {
   hideAuthAlert();
 
   if (tab === 'signin') {
-    btnSignin.classList.add('active');
-    btnSignin.setAttribute('aria-selected', 'true');
-    btnSignup.classList.remove('active');
-    btnSignup.setAttribute('aria-selected', 'false');
-    panelSignin.style.display = 'block';
-    panelSignup.style.display = 'none';
+    if (btnSignin) btnSignin.classList.add('active');
+    if (btnSignup) btnSignup.classList.remove('active');
+    if (panelSignin) panelSignin.style.display = 'block';
+    if (panelSignup) panelSignup.style.display = 'none';
   } else {
-    btnSignup.classList.add('active');
-    btnSignup.setAttribute('aria-selected', 'true');
-    btnSignin.classList.remove('active');
-    btnSignin.setAttribute('aria-selected', 'false');
-    panelSignup.style.display = 'block';
-    panelSignin.style.display = 'none';
+    if (btnSignup) btnSignup.classList.add('active');
+    if (btnSignin) btnSignin.classList.remove('active');
+    if (panelSignup) panelSignup.style.display = 'block';
+    if (panelSignin) panelSignin.style.display = 'none';
   }
 }
 
@@ -973,36 +1309,35 @@ function toggleLoginMethod(method) {
   hideAuthAlert();
 
   if (method === 'password') {
-    btnPwd.classList.add('active');
-    btnOtp.classList.remove('active');
-    formPwd.style.display = 'flex';
-    formOtp.style.display = 'none';
+    if (btnPwd) btnPwd.classList.add('active');
+    if (btnOtp) btnOtp.classList.remove('active');
+    if (formPwd) formPwd.style.display = 'flex';
+    if (formOtp) formOtp.style.display = 'none';
   } else {
-    btnOtp.classList.add('active');
-    btnPwd.classList.remove('active');
-    formOtp.style.display = 'block';
-    formPwd.style.display = 'none';
+    if (btnOtp) btnOtp.classList.add('active');
+    if (btnPwd) btnPwd.classList.remove('active');
+    if (formOtp) formOtp.style.display = 'block';
+    if (formPwd) formPwd.style.display = 'none';
   }
 }
 
 function selectSignupRole(role, element) {
-  document.querySelectorAll('.role-card').forEach(card => card.classList.remove('selected'));
-  element.classList.add('selected');
-  const radio = element.querySelector('input[type="radio"]');
+  document.querySelectorAll('.role-card').forEach((card) => card.classList.remove('selected'));
+  if (element) element.classList.add('selected');
+  const radio = element ? element.querySelector('input[type="radio"]') : null;
   if (radio) radio.checked = true;
 }
 
 function showAuthAlert(type, message, devOtp = null) {
   const alertEl = document.getElementById('auth-alert');
   if (!alertEl) return;
-
   alertEl.className = `auth-alert ${type}`;
   alertEl.hidden = false;
 
   if (devOtp) {
     alertEl.innerHTML = `
       <div>${message}</div>
-      <button type="button" class="btn btn-secondary btn-sm" style="padding: 2px 8px; font-size: 0.75rem; white-space: nowrap;" onclick="autoFillOtp('${devOtp}')">
+      <button type="button" class="btn btn-secondary btn-sm" style="padding:2px 8px;font-size:0.75rem;" onclick="autoFillOtp('${devOtp}')">
         Fill OTP: <strong>${devOtp}</strong>
       </button>
     `;
@@ -1018,8 +1353,7 @@ function hideAuthAlert() {
 
 function autoFillOtp(otp) {
   const digits = otp.split('');
-  // Check active panel
-  const activePanel = document.getElementById('auth-panel-signup').style.display === 'block' ? 'signup' : 'login';
+  const activePanel = document.getElementById('auth-panel-signup')?.style.display === 'block' ? 'signup' : 'login';
   const inputs = document.querySelectorAll(`#${activePanel}-otp-inputs .otp-box-digit`);
   inputs.forEach((input, idx) => {
     input.value = digits[idx] || '';
@@ -1032,29 +1366,23 @@ function setupOtpDigitInputs(containerId) {
   if (!container) return;
 
   const inputs = container.querySelectorAll('.otp-box-digit');
-
   inputs.forEach((input, index) => {
     input.addEventListener('input', (e) => {
       const val = e.target.value.replace(/[^0-9]/g, '');
       e.target.value = val ? val.slice(-1) : '';
-
-      if (val && index < inputs.length - 1) {
-        inputs[index + 1].focus();
-      }
+      if (val && index < inputs.length - 1) inputs[index + 1].focus();
     });
 
     input.addEventListener('keydown', (e) => {
-      if (e.key === 'Backspace' && !input.value && index > 0) {
-        inputs[index - 1].focus();
-      }
+      if (e.key === 'Backspace' && !input.value && index > 0) inputs[index - 1].focus();
     });
 
     input.addEventListener('paste', (e) => {
       e.preventDefault();
       const pasteData = (e.clipboardData || window.clipboardData).getData('text').trim();
       if (/^\d{6}$/.test(pasteData)) {
-        pasteData.split('').forEach((digit, i) => {
-          if (inputs[i]) inputs[i].value = digit;
+        pasteData.split('').forEach((d, i) => {
+          if (inputs[i]) inputs[i].value = d;
         });
         inputs[inputs.length - 1].focus();
       }
@@ -1066,26 +1394,16 @@ function getOtpCodeFromBoxes(containerId) {
   const container = document.getElementById(containerId);
   if (!container) return '';
   const inputs = container.querySelectorAll('.otp-box-digit');
-  return Array.from(inputs).map(i => i.value).join('');
+  return Array.from(inputs).map((i) => i.value).join('');
 }
 
-function clearOtpBoxes(containerId) {
-  const container = document.getElementById(containerId);
-  if (!container) return;
-  container.querySelectorAll('.otp-box-digit').forEach(i => i.value = '');
-}
-
-/**
- * Handle direct Password Login
- */
 async function handlePasswordLogin(e) {
   e.preventDefault();
   const email = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value;
   const btn = document.getElementById('btn-submit-pwd-login');
 
-  btn.disabled = true;
-  btn.textContent = 'Authenticating...';
+  if (btn) btn.disabled = true;
   hideAuthAlert();
 
   try {
@@ -1094,257 +1412,29 @@ async function handlePasswordLogin(e) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password })
     });
-
     const data = await res.json();
     if (res.ok && data.ok) {
       setAuthSession(data.token, data.user);
       closeSignInModal();
       showToast(`Welcome back, ${data.user.name}!`);
     } else {
-      showAuthAlert('error', data.error || 'Invalid credentials');
+      showAuthAlert('error', data.error || 'Invalid email or password');
     }
   } catch (err) {
-    showAuthAlert('error', 'Unable to connect to backend server. Make sure port 3001 is running.');
+    showAuthAlert('error', 'Authentication server offline. Make sure backend port 3001 is running.');
   } finally {
-    btn.disabled = false;
-    btn.innerHTML = `<span>Sign In</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>`;
+    if (btn) btn.disabled = false;
   }
 }
 
-/**
- * Request OTP for Login
- */
-async function requestLoginOtp(isResend = false) {
-  const emailInput = document.getElementById('login-otp-email');
-  const email = emailInput.value.trim();
-
-  if (!email || !email.includes('@')) {
-    showAuthAlert('error', 'Please enter a valid email address');
-    return;
-  }
-
-  currentLoginEmail = email;
-  hideAuthAlert();
-
-  const btn = document.getElementById('btn-send-login-otp');
-  btn.disabled = true;
-  btn.textContent = 'Sending code...';
-
-  try {
-    const res = await fetch(`${AUTH_API_BASE}/send-otp`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, purpose: 'login' })
-    });
-
-    const data = await res.json();
-    if (res.ok && data.ok) {
-      document.getElementById('login-otp-step-1').style.display = 'none';
-      document.getElementById('login-otp-step-2').hidden = false;
-      document.getElementById('login-target-email-display').textContent = email;
-      clearOtpBoxes('login-otp-inputs');
-
-      startOtpCountdown('login');
-      showAuthAlert('success', data.message, data.devOtp);
-    } else {
-      showAuthAlert('error', data.error || 'Failed to dispatch OTP');
-    }
-  } catch (err) {
-    showAuthAlert('error', 'Connection error. Check backend server.');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Send Login Code';
-  }
-}
-
-function resetLoginOtpFlow() {
-  document.getElementById('login-otp-step-1').style.display = 'block';
-  document.getElementById('login-otp-step-2').hidden = true;
-  clearInterval(loginOtpTimer);
-  hideAuthAlert();
-}
-
-/**
- * Submit OTP to complete Login
- */
-async function submitLoginOtp() {
-  const otp = getOtpCodeFromBoxes('login-otp-inputs');
-  if (otp.length < 6) {
-    showAuthAlert('error', 'Please enter all 6 digits of the OTP');
-    return;
-  }
-
-  const btn = document.getElementById('btn-verify-login-otp');
-  btn.disabled = true;
-  btn.textContent = 'Verifying...';
-  hideAuthAlert();
-
-  try {
-    const res = await fetch(`${AUTH_API_BASE}/login-otp`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: currentLoginEmail, otp })
-    });
-
-    const data = await res.json();
-    if (res.ok && data.ok) {
-      setAuthSession(data.token, data.user);
-      closeSignInModal();
-      showToast(`Welcome, ${data.user.name}!`);
-    } else {
-      showAuthAlert('error', data.error || 'Invalid or expired OTP');
-    }
-  } catch (err) {
-    showAuthAlert('error', 'Connection failed');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Verify & Sign In';
-  }
-}
-
-/**
- * Handle Step 1 of Sign Up (Dispatch Free OTP)
- */
-async function handleSignupStep1(e) {
-  e.preventDefault();
-  const name = document.getElementById('signup-name').value.trim();
-  const email = document.getElementById('signup-email').value.trim();
-  const password = document.getElementById('signup-password').value;
-  const org = document.getElementById('signup-org').value.trim();
-  const zone = document.getElementById('signup-zone').value;
-  const phone = document.getElementById('signup-phone').value.trim();
-  const role = document.querySelector('input[name="signup-role"]:checked')?.value || 'donor';
-
-  currentSignupData = { name, email, password, organization: org, zone, phone, role };
-
-  const btn = document.getElementById('btn-send-signup-otp');
-  btn.disabled = true;
-  btn.textContent = 'Sending free code...';
-  hideAuthAlert();
-
-  try {
-    const res = await fetch(`${AUTH_API_BASE}/send-otp`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, purpose: 'signup', name, role, organization: org })
-    });
-
-    const data = await res.json();
-    if (res.ok && data.ok) {
-      document.getElementById('signup-step-1').style.display = 'none';
-      document.getElementById('signup-step-2').hidden = false;
-      document.getElementById('signup-target-email-display').textContent = email;
-      clearOtpBoxes('signup-otp-inputs');
-
-      startOtpCountdown('signup');
-      showAuthAlert('success', data.message, data.devOtp);
-    } else {
-      showAuthAlert('error', data.error || 'Failed to send verification code');
-    }
-  } catch (err) {
-    showAuthAlert('error', 'Could not reach auth server');
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = `<span>Send Verification Code</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>`;
-  }
-}
-
-function resetSignupStep() {
-  document.getElementById('signup-step-1').style.display = 'block';
-  document.getElementById('signup-step-2').hidden = true;
-  clearInterval(signupOtpTimer);
-  hideAuthAlert();
-}
-
-function resendSignupOtp() {
-  if (!currentSignupData.email) return;
-  handleSignupStep1({ preventDefault: () => {} });
-}
-
-/**
- * Submit Signup OTP & complete registration
- */
-async function submitSignupVerification() {
-  const otp = getOtpCodeFromBoxes('signup-otp-inputs');
-  if (otp.length < 6) {
-    showAuthAlert('error', 'Please enter all 6 digits');
-    return;
-  }
-
-  const btn = document.getElementById('btn-complete-signup');
-  btn.disabled = true;
-  btn.textContent = 'Registering...';
-  hideAuthAlert();
-
-  try {
-    const res = await fetch(`${AUTH_API_BASE}/verify-and-register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...currentSignupData, otp })
-    });
-
-    const data = await res.json();
-    if (res.ok && data.ok) {
-      setAuthSession(data.token, data.user);
-      closeSignInModal();
-      showToast(`Account verified! Welcome to Sahakara, ${data.user.name}.`);
-    } else {
-      showAuthAlert('error', data.error || 'Verification failed');
-    }
-  } catch (err) {
-    showAuthAlert('error', 'Connection error');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Verify & Create Account';
-  }
-}
-
-/**
- * OTP Timer Countdown Helper
- */
-function startOtpCountdown(type) {
-  let seconds = 45;
-  const countdownEl = document.getElementById(`${type}-otp-countdown`);
-  const resendBtn = document.getElementById(`btn-resend-${type}-otp`);
-  const timerText = document.getElementById(`${type}-otp-timer-text`);
-
-  if (!countdownEl || !resendBtn) return;
-
-  resendBtn.disabled = true;
-  timerText.style.display = 'inline';
-  countdownEl.textContent = seconds;
-
-  const timerRef = setInterval(() => {
-    seconds--;
-    countdownEl.textContent = seconds;
-    if (seconds <= 0) {
-      clearInterval(timerRef);
-      resendBtn.disabled = false;
-      timerText.style.display = 'none';
-    }
-  }, 1000);
-
-  if (type === 'login') {
-    clearInterval(loginOtpTimer);
-    loginOtpTimer = timerRef;
-  } else {
-    clearInterval(signupOtpTimer);
-    signupOtpTimer = timerRef;
-  }
-}
-
-/**
- * 1-Click Persona Login (Pre-configured test accounts)
- */
 async function quickLoginPersona(role) {
-  hideAuthAlert();
-  const credentials = {
+  const creds = {
     donor: { email: 'donor@sahakara.org', password: 'Sahakara@123' },
     shelter: { email: 'shelter@sahakara.org', password: 'Sahakara@123' },
     driver: { email: 'driver@sahakara.org', password: 'Sahakara@123' }
   };
 
-  const cred = credentials[role];
+  const cred = creds[role];
   if (!cred) return;
 
   try {
@@ -1353,23 +1443,19 @@ async function quickLoginPersona(role) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(cred)
     });
-
     const data = await res.json();
     if (res.ok && data.ok) {
       setAuthSession(data.token, data.user);
       closeSignInModal();
       showToast(`Logged in as demo persona: ${data.user.name} (${data.user.role.toUpperCase()})`);
     } else {
-      showAuthAlert('error', 'Could not login persona');
+      showAuthAlert('error', 'Could not login demo persona');
     }
   } catch (e) {
-    showAuthAlert('error', 'Backend offline. Please start backend on port 3001.');
+    showAuthAlert('error', 'Backend port 3001 offline.');
   }
 }
 
-/**
- * Store auth session in localStorage & update UI
- */
 function setAuthSession(token, user) {
   authState.token = token;
   authState.user = user;
@@ -1378,23 +1464,18 @@ function setAuthSession(token, user) {
   renderNavAuthState();
 }
 
-/**
- * Logout
- */
 function logout(showNotice = true) {
   authState.token = null;
   authState.user = null;
   localStorage.removeItem('sahakara_auth_token');
   localStorage.removeItem('sahakara_auth_user');
   renderNavAuthState();
-  if (showNotice) {
-    showToast('You have been signed out.');
-  }
+  if (showNotice) showToast('You have been signed out.');
 }
 
-/**
- * Lightweight Toast Notification
- */
+/* ==========================================================================
+   10. TOAST NOTIFICATION & COMPLIANCE MODALS
+   ========================================================================== */
 function showToast(message) {
   let toast = document.getElementById('sahakara-toast');
   if (!toast) {
@@ -1433,202 +1514,36 @@ function showToast(message) {
   }, 4000);
 }
 
-/* ==========================================================================
-   8. Compliance Notice Modal
-   ========================================================================== */
-const complianceDocs = {
-  'FSSAI Guidelines': `
-    <p><strong>FSSAI Food Safety and Standards (Recovery and Distribution of Surplus Food) Regulations, 2019</strong></p>
-    <p>Sahakara guarantees digital chain-of-custody logs ensuring all surplus food is dispatched within 2 hours of post, maintained above 60°C or below 5°C, and distributed exclusively to registered welfare organizations.</p>
-  `,
-  'Good Samaritan': `
-    <p><strong>Statutory Donor Protection</strong></p>
-    <p>Under Section 31 of statutory safety guidelines, food business operators acting in good faith without willful misconduct or gross negligence are shielded from civil liability regarding surplus food donation.</p>
-  `,
-  'Audit Logs': `
-    <p><strong>Real-Time Verifiable Handshakes</strong></p>
-    <p>Every donation batch is assigned a unique cryptographic dispatch identifier (e.g. #SK-8821), tracking kitchen origin, vehicle transit temperatures, SMS OTP driver exchanges, and shelter consumption logs.</p>
-  `,
-  'Privacy': `
-    <p><strong>Civic Public Good Data Policy</strong></p>
-    <p>No user data is monetized or shared with third-party advertising networks. Telephone numbers are masked during volunteer driver relays.</p>
-  `
-};
-
-function showModalNotice(topic) {
+function openNoticeModal(title) {
   const modal = document.getElementById('modal-notice');
   const heading = document.getElementById('notice-heading');
   const body = document.getElementById('notice-body');
-
-  heading.textContent = topic;
-  body.innerHTML = complianceDocs[topic] || '<p>Official protocol documentation available on demand.</p>';
-
+  if (!modal) return;
+  if (heading) heading.textContent = title;
   modal.hidden = false;
   document.body.style.overflow = 'hidden';
 }
 
 function closeNoticeModal() {
   const modal = document.getElementById('modal-notice');
+  if (!modal) return;
   modal.hidden = true;
   document.body.style.overflow = '';
 }
 
-/* ==========================================================================
-   9. Global Backdrop and Escape Key Listeners
-   ========================================================================== */
-document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
-  backdrop.addEventListener('click', (e) => {
-    if (e.target === backdrop) {
-      backdrop.hidden = true;
-      document.body.style.overflow = '';
-    }
-  });
-});
-
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') {
-    document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
-      backdrop.hidden = true;
-    });
-    document.body.style.overflow = '';
-  }
-});
-
-/* ==========================================================================
-   10. Interactive Zero-Waste Impact Calculator
-   ========================================================================== */
-let currentKitchenMultiplier = 1.0;
-
-function updateCalculator(meals) {
-  const mealCount = parseInt(meals, 10);
-  const kgPerDay = Math.round(mealCount * 0.45);
-
-  const displayEl = document.getElementById('calc-meals-display');
-  const kgDisplayEl = document.getElementById('calc-kg-display');
-  if (displayEl) displayEl.textContent = `${mealCount} meals/day`;
-  if (kgDisplayEl) kgDisplayEl.textContent = `${kgPerDay} kg/day`;
-
-  // Annual Calculations
-  const yearlyMeals = mealCount * 365 * currentKitchenMultiplier;
-  const yearlyKg = yearlyMeals * 0.45;
-  const co2Tons = (yearlyKg * 2.5 / 1000).toFixed(1);
-  const waterMillionL = (yearlyMeals * 42 / 1000).toFixed(1);
-  const csrLakhs = (yearlyMeals * 30 / 100000).toFixed(1);
-
-  const fedEl = document.getElementById('res-people-fed');
-  const co2El = document.getElementById('res-co2-saved');
-  const waterEl = document.getElementById('res-water-saved');
-  const csrEl = document.getElementById('res-csr-value');
-
-  if (fedEl) fedEl.textContent = Math.round(yearlyMeals).toLocaleString('en-IN');
-  if (co2El) co2El.innerHTML = `${co2Tons} <small>tons</small>`;
-  if (waterEl) waterEl.innerHTML = `${waterMillionL} <small>Million L</small>`;
-  if (csrEl) csrEl.innerHTML = `₹ ${csrLakhs} <small>Lakhs</small>`;
-}
-
-function setCalcType(type, btn) {
-  document.querySelectorAll('.calc-kitchen-types .type-chip').forEach(c => c.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-
-  if (type === 'mess') currentKitchenMultiplier = 1.0;
-  if (type === 'banquet') currentKitchenMultiplier = 1.35;
-  if (type === 'caterer') currentKitchenMultiplier = 1.15;
-  if (type === 'hotel') currentKitchenMultiplier = 1.5;
-
-  const slider = document.getElementById('calc-surplus-range');
-  if (slider) updateCalculator(slider.value);
-}
-
-/* ==========================================================================
-   11. Interactive SMS & Helpline Simulator
-   ========================================================================== */
-function simulateSmsPreset(type) {
-  const bubbleDonor = document.getElementById('sms-bubble-donor');
-  const bubbleReply = document.getElementById('sms-bubble-reply');
-  if (!bubbleDonor || !bubbleReply) return;
-
-  if (type === 'amity') {
-    bubbleDonor.textContent = 'FOOD 50 MEALS HOT VEG PULAO AMITY MESS PIN 303002';
-    bubbleReply.textContent = 'Processing Jaipur node match...';
-
-    setTimeout(() => {
-      bubbleReply.textContent = 'SAHAKARA DISPATCH: Received #SK-9412. Matched to Ananda Seva Ashram (Node 04). Driver Vikram R. dispatched. Pickup OTP: 5252.';
-      renderDispatchCard({
-        tracking_id: 'SK-9412',
-        donor_name: 'Amity University Mess (Kant Kalwar)',
-        food_title: '50 Meals Hot Veg Pulao',
-        quantity: '50 Meals (~22 kg)',
-        meals_count: 50,
-        temp_celsius: 66,
-        status: 'matched',
-        pickup_address: 'SP-1, Kant Kalwar, NH-11C, Jaipur 303002',
-        assigned_shelter: 'Ananda Seva Ashram (Node 04)',
-        shelter_distance_km: 2.3,
-        assigned_driver: 'Driver Vikram R. (EV Cargo-4419)',
-        driver_eta_mins: 12,
-        otp_code: '5252'
-      });
-    }, 400);
-  } else if (type === 'banquet') {
-    bubbleDonor.textContent = 'FOOD 100 PORTIONS PANEER RICE ROYAL BANQUET PIN 302017';
-    bubbleReply.textContent = 'Processing Jaipur node match...';
-
-    setTimeout(() => {
-      bubbleReply.textContent = 'SAHAKARA DISPATCH: Received #SK-8835. Matched to Akshaya Patra Foundation Jaipur (3.1 km). EV Driver Dinesh assigned. OTP: 7712.';
-      renderDispatchCard({
-        tracking_id: 'SK-8835',
-        donor_name: 'Royal Heritage Banquet Jaipur',
-        food_title: '100 Portions Paneer Rice & Sabzi',
-        quantity: '100 Meals (~45 kg)',
-        meals_count: 100,
-        temp_celsius: 67,
-        status: 'matched',
-        pickup_address: 'Mahal Road, Jagatpura, Jaipur 302017',
-        assigned_shelter: 'Akshaya Patra Foundation Jaipur',
-        shelter_distance_km: 3.1,
-        assigned_driver: 'Driver Dinesh K. (EV-7712)',
-        driver_eta_mins: 20,
-        otp_code: '7712'
-      });
-    }, 400);
-  } else if (type === 'accept') {
-    bubbleDonor.textContent = 'ACCEPT #SK-8821';
-    bubbleReply.textContent = 'SAHAKARA DISPATCH: Volunteer Driver Vikram R. confirmed pickup. Route active on Jaipur live radar. Handover OTP: 4419.';
-    if (currentLiveDispatch) {
-      currentLiveDispatch.status = 'picked_up';
-      updateStepperState('picked_up');
-    }
-  }
-}
-
-/* ==========================================================================
-   12. FSSAI Rescue Certificate Pass Modal
-   ========================================================================== */
 function openFssaiPassModal() {
   const modal = document.getElementById('modal-fssai-pass');
   if (!modal) return;
-
-  const batchId = currentLiveDispatch ? currentLiveDispatch.tracking_id : 'SK-8821';
-  const donor = currentLiveDispatch ? currentLiveDispatch.donor_name : 'Amity University Mess (Jaipur)';
-  const shelter = currentLiveDispatch ? currentLiveDispatch.assigned_shelter : 'Ananda Seva Ashram (Node 04)';
-  const driver = currentLiveDispatch ? currentLiveDispatch.assigned_driver : 'Driver Vikram R. (EV-4419)';
-
-  const idEl = document.getElementById('cert-batch-id');
-  const dEl = document.getElementById('cert-donor');
-  const sEl = document.getElementById('cert-shelter');
-  const drEl = document.getElementById('cert-driver');
-
-  if (idEl) idEl.textContent = `#${batchId}`;
-  if (dEl) dEl.textContent = donor;
-  if (sEl) sEl.textContent = shelter;
-  if (drEl) drEl.textContent = driver;
-
   modal.hidden = false;
   document.body.style.overflow = 'hidden';
 }
 
 function closeFssaiPassModal() {
   const modal = document.getElementById('modal-fssai-pass');
-  if (modal) modal.hidden = true;
+  if (!modal) return;
+  modal.hidden = true;
   document.body.style.overflow = '';
 }
+
+
+
