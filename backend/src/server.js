@@ -7,12 +7,17 @@ const miscRouter = require('./routes/misc');
 const { router: authRouter, initializeAuth } = require('./routes/auth');
 
 const app = express();
-const allowedOrigins = (process.env.FRONTEND_ORIGIN || 'http://localhost:8080')
-  .split(',')
-  .map((origin) => origin.trim())
-  .filter(Boolean);
-app.use(cors({ origin: allowedOrigins }));
+app.use(cors());
 app.use(express.json());
+
+app.get('/', (req, res) => {
+  res.json({
+    name: 'Sahakara API',
+    status: 'running',
+    health: '/api/health',
+    endpoints: ['/api/auth', '/api/donations', '/api/shelters', '/api/drivers', '/api/stats'],
+  });
+});
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 
