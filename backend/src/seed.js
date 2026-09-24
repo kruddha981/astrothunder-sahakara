@@ -1,47 +1,30 @@
-// seed.js
-// Inserts starter shelters and drivers the first time the app runs.
-// Safe to run repeatedly — it only inserts when the tables are empty,
-// so it won't wipe out real data your team enters during the demo.
-
 const db = require('./db');
 
-function seed() {
-  const shelterCount = db.prepare('SELECT COUNT(*) AS n FROM shelters').get().n;
-  const driverCount = db.prepare('SELECT COUNT(*) AS n FROM drivers').get().n;
+async function seed() {
+  const shelters = [
+    { id: 's1', name: 'Hopewell Shelter', zone: 'Downtown', capacity: 60, accepting: true },
+    { id: 's2', name: 'Riverside Food Bank', zone: 'Eastside', capacity: 90, accepting: true },
+    { id: 's3', name: "St. Anne's Kitchen", zone: 'Uptown', capacity: 40, accepting: true },
+    { id: 's4', name: 'Westside Community Hub', zone: 'Westside', capacity: 50, accepting: false },
+    { id: 's5', name: 'Southside Pantry', zone: 'Southside', capacity: 30, accepting: true },
+  ];
+  const drivers = [
+    { id: 'v1', name: 'Amir (bike)', available: true },
+    { id: 'v2', name: 'Priya (van)', available: true },
+    { id: 'v3', name: 'Leo (car)', available: true },
+  ];
 
-  if (shelterCount === 0) {
-    const insert = db.prepare(
-      'INSERT INTO shelters (id, name, zone, capacity, accepting) VALUES (?, ?, ?, ?, ?)'
-    );
-    const shelters = [
-      ['s1', "Hopewell Shelter", 'Downtown', 60, 1],
-      ['s2', 'Riverside Food Bank', 'Eastside', 90, 1],
-      ['s3', "St. Anne's Kitchen", 'Uptown', 40, 1],
-      ['s4', 'Westside Community Hub', 'Westside', 50, 0],
-      ['s5', 'Southside Pantry', 'Southside', 30, 1],
-    ];
-    const insertMany = db.transaction((rows) => rows.forEach((r) => insert.run(...r)));
-    insertMany(shelters);
-    console.log(`Seeded ${shelters.length} shelters`);
-  }
+  const shelterResult = await db.from('shelters').upsert(shelters, {
+    onConflict: 'id',
+    ignoreDuplicates: true,
+  });
+  if (shelterResult.error) throw shelterResult.error;
 
-  if (driverCount === 0) {
-    const insert = db.prepare('INSERT INTO drivers (id, name, available) VALUES (?, ?, ?)');
-    const drivers = [
-      ['v1', 'Amir (bike)', 1],
-      ['v2', 'Priya (van)', 1],
-      ['v3', 'Leo (car)', 1],
-    ];
-    const insertMany = db.transaction((rows) => rows.forEach((r) => insert.run(...r)));
-    insertMany(drivers);
-    console.log(`Seeded ${drivers.length} drivers`);
-  }
+  const driverResult = await db.from('drivers').upsert(drivers, {
+    onConflict: 'id',
+    ignoreDuplicates: true,
+  });
+  if (driverResult.error) throw driverResult.error;
 }
 
 module.exports = seed;
-
-// Allow running directly: `node src/seed.js`
-if (require.main === module) {
-  seed();
-  console.log('Done.');
-}

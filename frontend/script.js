@@ -1190,6 +1190,199 @@ function filterMapNodes(filter, element) {
 /* ==========================================================================
    9. AUTHENTICATION (EMAIL OTP / PASSWORD / JWT)
    ========================================================================== */
+function filterCities() {
+  const query = document.getElementById('city-search').value.toLowerCase().trim();
+  const chips = document.querySelectorAll('#city-chips-grid .city-chip');
+
+  chips.forEach(chip => {
+    const cityName = chip.getAttribute('data-name') || '';
+    if (cityName.includes(query) || query === '') {
+      chip.style.display = 'flex';
+    } else {
+      chip.style.display = 'none';
+    }
+  });
+}
+
+/* ==========================================================================
+   6. Post Surplus Food & Node Registration Modal
+   ========================================================================== */
+function openPostModal(category = '') {
+  currentModalCategory = category;
+  const modal = document.getElementById('modal-post');
+  const form = document.getElementById('post-form');
+  const success = document.getElementById('post-success');
+  const title = document.getElementById('modal-title');
+  const submitBtn = document.getElementById('btn-submit-post');
+
+  if (category === 'shelter') {
+    title.textContent = 'Register Verified Shelter Node (Jaipur)';
+    submitBtn.textContent = 'Register Shelter Node';
+  } else if (category === 'driver') {
+    title.textContent = 'Join Volunteer Transport Network (Jaipur)';
+    submitBtn.textContent = 'Register as Driver';
+  } else if (category === 'gaushala') {
+    title.textContent = 'Register Gaushala Node (Jaipur)';
+    submitBtn.textContent = 'Register Gaushala';
+  } else if (category === 'compost') {
+    title.textContent = 'Register Bio-Compost Facility';
+    submitBtn.textContent = 'Register Facility';
+  } else {
+    title.textContent = 'Post Surplus Food (Jaipur Live Cluster)';
+    submitBtn.textContent = 'Broadcast to Nearby Shelters';
+  }
+
+  form.hidden = false;
+  success.hidden = true;
+  modal.hidden = false;
+  document.body.style.overflow = 'hidden';
+}
+
+function closePostModal() {
+  const modal = document.getElementById('modal-post');
+  modal.hidden = true;
+  document.body.style.overflow = '';
+}
+
+async function handlePostSubmit(e) {
+  e.preventDefault();
+  const form = document.getElementById('post-form');
+  const success = document.getElementById('post-success');
+  const submitBtn = document.getElementById('btn-submit-post');
+
+  const donorType = document.getElementById('post-donor-type').value;
+  const donorName = document.getElementById('post-donor-name').value || 'Amity Jaipur Food Partner';
+  const phone = document.getElementById('post-phone').value || '+91 98290 12345';
+  const pincode = document.getElementById('post-pincode').value || '302001';
+  const foodType = document.getElementById('post-food-type').value || 'Hot Cooked Meals';
+  const quantity = document.getElementById('post-qty').value || '50 meals';
+  const deadline = document.getElementById('post-deadline').value || '2 hours';
+  const address = document.getElementById('post-address').value || 'Jaipur City Hub';
+
+  if (!authState.token || authState.user?.role !== 'donor') {
+    openSignInModal();
+    return;
+  }
+
+  const mealCount = parseInt(quantity, 10) || 50;
+  const expiryHours = Math.max(2, Math.min(6, parseInt(deadline, 10) || 4));
+
+  submitBtn.textContent = 'Broadcasting to Jaipur Node Cluster...';
+  submitBtn.disabled = true;
+
+  let donation;
+  try {
+    const response = await fetch('http://localhost:3001/api/donations', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authState.token}`,
+      },
+      body: JSON.stringify({
+        donorName,
+        foodType,
+        quantity: mealCount,
+        expiryHours,
+        zone: 'Downtown',
+      }),
+    });
+
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || 'Unable to post donation');
+    donation = payload;
+  } catch (error) {
+    submitBtn.textContent = 'Broadcast to Nearby Shelters';
+    submitBtn.disabled = false;
+    alert(error.message);
+    return;
+  }
+
+  setTimeout(() => {
+    submitBtn.textContent = 'Broadcast to Nearby Shelters';
+    submitBtn.disabled = false;
+
+    if (currentModalCategory && currentModalCategory !== 'donor') {
+      // Partner Node Registration
+      const newNode = {
+        id: `node-user-${Date.now()}`,
+        type: currentModalCategory,
+        name: donorName,
+        category: `${currentModalCategory.toUpperCase()} Partner Node`,
+        lat: 26.9124 + (Math.random() - 0.5) * 0.08,
+        lng: 75.7873 + (Math.random() - 0.5) * 0.08,
+        address: `${address}, Pin: ${pincode}`,
+        capacity_meals: 100,
+        status: 'Verified & Active in Cluster',
+        phone
+      };
+
+      JAIPUR_NODES.push(newNode);
+
+      const successHeading = success.querySelector('.success-heading');
+      const successPara = success.querySelector('.success-paragraph');
+      if (successHeading) successHeading.textContent = 'Node Verified & Registered';
+      if (successPara) successPara.textContent = `${donorName} has been enrolled in the Jaipur food recovery network.`;
+
+      form.hidden = true;
+      success.hidden = false;
+      renderMapData();
+    } else {
+      // Surplus Food Posting
+      const newTrackingId = donation.id;
+
+      const newDispatch = {
+        tracking_id: newTrackingId,
+        donor_name: donation.donor_name,
+        food_title: `${quantity} ${foodType}`,
+        quantity,
+        meals_count: mealCount,
+        temp_celsius: 65,
+        status: donation.status,
+        pickup_address: address,
+        assigned_shelter: donation.matched_shelter_id || 'Awaiting shelter match',
+        shelter_distance_km: 2.1,
+        assigned_driver: donation.assigned_driver_id || 'Awaiting driver assignment',
+        driver_eta_mins: 18,
+        otp_code: `${Math.floor(1000 + Math.random() * 9000)}`
+      };
+
+      // Add as donor node on map
+      const newDonorNode = {
+        id: `donor-${newTrackingId}`,
+        type: 'donor',
+        name: donorName,
+        category: donorType,
+        lat: 26.9300 + (Math.random() - 0.5) * 0.06,
+        lng: 75.8000 + (Math.random() - 0.5) * 0.06,
+        address,
+        capacity_meals: mealCount,
+        status: `Surplus Active (#${newTrackingId})`,
+        phone
+      };
+
+      JAIPUR_NODES.unshift(newDonorNode);
+
+      const successHeading = success.querySelector('.success-heading');
+      const successPara = success.querySelector('.success-paragraph');
+      
+      if (successHeading) successHeading.textContent = `Dispatch Broadcast #${newTrackingId} Active`;
+      if (successPara) {
+        successPara.innerHTML = `Surplus reference <strong>#${newTrackingId}</strong> matched to <strong>${newDispatch.assigned_shelter}</strong>. Driver <strong>${newDispatch.assigned_driver}</strong> assigned. Pickup OTP: <strong>${newDispatch.otp_code}</strong>.`;
+      }
+
+      // Live update Hero Card & Map
+      renderDispatchCard(newDispatch);
+      renderMapData();
+
+      form.hidden = true;
+      success.hidden = false;
+    }
+  }, 600);
+}
+
+/* ==========================================================================
+   7. Authentication, Free Email OTP & State Management
+   ========================================================================== */
 const AUTH_API_BASE = 'http://localhost:3001/api/auth';
 let authState = {
   token: localStorage.getItem('sahakara_auth_token') || null,

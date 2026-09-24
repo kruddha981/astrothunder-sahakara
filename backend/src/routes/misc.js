@@ -1,29 +1,42 @@
 const express = require('express');
 const router = express.Router();
 const donationService = require('../donationService');
+const { authenticateToken, requireRole } = require('./auth');
 
 // GET /api/shelters
-router.get('/shelters', (req, res) => {
-  res.json(donationService.getAllShelters());
+router.get('/shelters', async (req, res, next) => {
+  try {
+    res.json(await donationService.getAllShelters());
+  } catch (error) {
+    next(error);
+  }
 });
 
 // PATCH /api/shelters/:id/toggle - flip a shelter's accepting status
-router.patch('/shelters/:id/toggle', (req, res) => {
+router.patch('/shelters/:id/toggle', authenticateToken, requireRole('shelter'), async (req, res) => {
   try {
-    res.json(donationService.toggleShelterAccepting(req.params.id));
+    res.json(await donationService.toggleShelterAccepting(req.params.id));
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 });
 
 // GET /api/drivers
-router.get('/drivers', (req, res) => {
-  res.json(donationService.getAllDrivers());
+router.get('/drivers', async (req, res, next) => {
+  try {
+    res.json(await donationService.getAllDrivers());
+  } catch (error) {
+    next(error);
+  }
 });
 
 // GET /api/stats - dashboard numbers
-router.get('/stats', (req, res) => {
-  res.json(donationService.getStats());
+router.get('/stats', async (req, res, next) => {
+  try {
+    res.json(await donationService.getStats());
+  } catch (error) {
+    next(error);
+  }
 });
 
 module.exports = router;
