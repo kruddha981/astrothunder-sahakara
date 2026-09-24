@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const donationService = require('../donationService');
+const { ZONES } = require('../matching');
 
 // GET /api/donations - list all
 router.get('/', (req, res) => {
@@ -18,6 +19,17 @@ router.post('/', (req, res) => {
   }
   if (typeof quantity !== 'number' || quantity <= 0) {
     return res.status(400).json({ error: 'quantity must be a positive number' });
+  }
+  if (!Object.hasOwn(ZONES, zone)) {
+    return res.status(400).json({
+      error: `zone must be one of: ${Object.keys(ZONES).join(', ')}`,
+    });
+  }
+  if (
+    expiryHours !== undefined &&
+    (!Number.isInteger(expiryHours) || expiryHours < 2 || expiryHours > 6)
+  ) {
+    return res.status(400).json({ error: 'expiryHours must be an integer from 2 to 6' });
   }
 
   const donation = donationService.createDonation({
