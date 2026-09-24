@@ -5,7 +5,7 @@
 
 (function () {
   const DEFAULT_CONFIG = {
-    API_BASE_URL: 'http://localhost:3001',
+    API_BASE_URL: 'https://astrothunder-sahakara-1.onrender.com',
     SUPABASE_URL: 'https://kzocpeydfecvopjphcmc.supabase.co',
     SUPABASE_ANON_KEY: 'replace-with-your-supabase-anon-key'
   };
