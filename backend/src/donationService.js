@@ -1,76 +1,84 @@
-// donationService.js
-// Wires the pure matching logic (matching.js) to the database.
-// This is where a donation's status actually moves through:
-// posted -> matched -> picked_up -> delivered
-// (or posted -> unmatched, if nothing fits)
-
+// Supabase-backed donation lifecycle.
 const db = require('./db');
 const { findBestShelter, findAvailableDriver } = require('./matching');
 
-function getAllShelters() {
-  return db.prepare('SELECT * FROM shelters').all();
+async function getAllShelters() {
+  const { data, error } = await db.from('shelters').select('*');
+  if (error) throw error;
+  return data;
 }
 
-function getAllDrivers() {
-  return db.prepare('SELECT * FROM drivers').all();
+async function getAllDrivers() {
+  const { data, error } = await db.from('drivers').select('*');
+  if (error) throw error;
+  return data;
 }
 
-function getDonation(id) {
-  return db.prepare('SELECT * FROM donations WHERE id = ?').get(id);
+async function getDonation(id) {
+  const { data, error } = await db.from('donations').select('*').eq('id', id).maybeSingle();
+  if (error) throw error;
+  return data;
 }
 
-function getAllDonations() {
-  return db.prepare('SELECT * FROM donations ORDER BY created_at DESC').all();
+async function getAllDonations() {
+  const { data, error } = await db.from('donations').select('*').order('created_at', { ascending: false });
+  if (error) throw error;
+  return data;
 }
 
-/** Try to match a donation to a shelter + driver, and persist the result. */
-function tryMatch(donationId) {
-  const donation = getDonation(donationId);
+async function tryMatch(donationId) {
+  const donation = await getDonation(donationId);
   if (!donation) throw new Error('Donation not found');
 
   const excludeIds = JSON.parse(donation.rejected_shelter_ids || '[]');
-  const shelter = findBestShelter(getAllShelters(), {
+  const shelter = findBestShelter(await getAllShelters(), {
     zone: donation.zone,
     quantity: donation.quantity,
     excludeIds,
   });
 
   if (!shelter) {
-    db.prepare(
-      `UPDATE donations SET status = 'unmatched', matched_shelter_id = NULL WHERE id = ?`
-    ).run(donationId);
+    const { error } = await db.from('donations').update({
+      status: 'unmatched',
+      matched_shelter_id: null,
+      assigned_driver_id: null,
+    }).eq('id', donationId);
+    if (error) throw error;
     return getDonation(donationId);
   }
 
-  const driver = findAvailableDriver(getAllDrivers());
-
-  db.prepare(
-    `UPDATE donations
-     SET status = 'matched', matched_shelter_id = ?, assigned_driver_id = ?
-     WHERE id = ?`
-  ).run(shelter.id, driver ? driver.id : null, donationId);
+  const driver = findAvailableDriver(await getAllDrivers());
+  const { error: donationError } = await db.from('donations').update({
+    status: 'matched',
+    matched_shelter_id: shelter.id,
+    assigned_driver_id: driver ? driver.id : null,
+  }).eq('id', donationId);
+  if (donationError) throw donationError;
 
   if (driver) {
-    db.prepare('UPDATE drivers SET available = 0 WHERE id = ?').run(driver.id);
+    const { error } = await db.from('drivers').update({ available: false }).eq('id', driver.id);
+    if (error) throw error;
   }
 
   return getDonation(donationId);
 }
 
-/** Create a new donation and immediately attempt to match it. */
-function createDonation({ donorName, foodType, quantity, expiryHours, zone }) {
+async function createDonation({ donorName, foodType, quantity, expiryHours, zone }) {
   const id = 'd' + Date.now() + Math.floor(Math.random() * 1000);
-  db.prepare(
-    `INSERT INTO donations (id, donor_name, food_type, quantity, expiry_hours, zone)
-     VALUES (?, ?, ?, ?, ?, ?)`
-  ).run(id, donorName, foodType, quantity, expiryHours, zone);
-
+  const { error } = await db.from('donations').insert({
+    id,
+    donor_name: donorName,
+    food_type: foodType,
+    quantity,
+    expiry_hours: expiryHours,
+    zone,
+  });
+  if (error) throw error;
   return tryMatch(id);
 }
 
-/** Shelter declines a matched donation -> free the driver, re-run matching excluding that shelter. */
-function declineMatch(donationId) {
-  const donation = getDonation(donationId);
+async function declineMatch(donationId) {
+  const donation = await getDonation(donationId);
   if (!donation) throw new Error('Donation not found');
   if (donation.status !== 'matched') throw new Error('Only a matched donation can be declined');
 
@@ -78,67 +86,79 @@ function declineMatch(donationId) {
   excludeIds.push(donation.matched_shelter_id);
 
   if (donation.assigned_driver_id) {
-    db.prepare('UPDATE drivers SET available = 1 WHERE id = ?').run(donation.assigned_driver_id);
+    const { error } = await db.from('drivers').update({ available: true }).eq('id', donation.assigned_driver_id);
+    if (error) throw error;
   }
 
-  db.prepare(
-    `UPDATE donations
-     SET rejected_shelter_ids = ?, assigned_driver_id = NULL
-     WHERE id = ?`
-  ).run(JSON.stringify(excludeIds), donationId);
-
+  const { error } = await db.from('donations').update({
+    rejected_shelter_ids: JSON.stringify(excludeIds),
+    assigned_driver_id: null,
+  }).eq('id', donationId);
+  if (error) throw error;
   return tryMatch(donationId);
 }
 
-function markPickedUp(donationId) {
-  const donation = getDonation(donationId);
+async function markPickedUp(donationId) {
+  const donation = await getDonation(donationId);
   if (!donation) throw new Error('Donation not found');
   if (donation.status !== 'matched') throw new Error('Donation must be matched before pickup');
 
-  db.prepare(`UPDATE donations SET status = 'picked_up' WHERE id = ?`).run(donationId);
+  const { error } = await db.from('donations').update({ status: 'picked_up' }).eq('id', donationId);
+  if (error) throw error;
   return getDonation(donationId);
 }
 
-function markDelivered(donationId) {
-  const donation = getDonation(donationId);
+async function markDelivered(donationId) {
+  const donation = await getDonation(donationId);
   if (!donation) throw new Error('Donation not found');
   if (donation.status !== 'picked_up') throw new Error('Donation must be picked up before delivery');
 
-  db.prepare(`UPDATE donations SET status = 'delivered' WHERE id = ?`).run(donationId);
+  const { error: donationError } = await db.from('donations').update({ status: 'delivered' }).eq('id', donationId);
+  if (donationError) throw donationError;
 
-  db.prepare('UPDATE shelters SET capacity = MAX(0, capacity - ?) WHERE id = ?').run(
-    donation.quantity,
-    donation.matched_shelter_id
-  );
+  const { data: shelter, error: shelterError } = await db
+    .from('shelters').select('capacity').eq('id', donation.matched_shelter_id).single();
+  if (shelterError) throw shelterError;
+
+  const { error: capacityError } = await db.from('shelters')
+    .update({ capacity: Math.max(0, shelter.capacity - donation.quantity) })
+    .eq('id', donation.matched_shelter_id);
+  if (capacityError) throw capacityError;
 
   if (donation.assigned_driver_id) {
-    db.prepare('UPDATE drivers SET available = 1 WHERE id = ?').run(donation.assigned_driver_id);
+    const { error } = await db.from('drivers').update({ available: true }).eq('id', donation.assigned_driver_id);
+    if (error) throw error;
   }
 
   return getDonation(donationId);
 }
 
-function toggleShelterAccepting(shelterId) {
-  const shelter = db.prepare('SELECT * FROM shelters WHERE id = ?').get(shelterId);
+async function toggleShelterAccepting(shelterId) {
+  const { data: shelter, error: fetchError } = await db.from('shelters').select('*').eq('id', shelterId).maybeSingle();
+  if (fetchError) throw fetchError;
   if (!shelter) throw new Error('Shelter not found');
-  db.prepare('UPDATE shelters SET accepting = ? WHERE id = ?').run(
-    shelter.accepting ? 0 : 1,
-    shelterId
-  );
-  return db.prepare('SELECT * FROM shelters WHERE id = ?').get(shelterId);
+
+  const { data, error } = await db.from('shelters').update({ accepting: !shelter.accepting })
+    .eq('id', shelterId).select().single();
+  if (error) throw error;
+  return data;
 }
 
-/** Impact numbers for the dashboard. */
-function getStats() {
-  const delivered = db.prepare(`SELECT * FROM donations WHERE status = 'delivered'`).all();
-  const weight = delivered.reduce((sum, d) => sum + d.quantity, 0);
-  const meals = Math.round(weight / 1.2); // ~1.2 lb per meal, rough estimate
-  const co2Kg = Math.round(weight * 2.5 * 0.4536 * 10) / 10; // lb -> kg, ~2.5kg CO2e per kg food
-  const active = db
-    .prepare(`SELECT COUNT(*) AS n FROM donations WHERE status NOT IN ('delivered', 'unmatched')`)
-    .get().n;
+async function getStats() {
+  const { data: delivered, error: deliveredError } = await db.from('donations').select('quantity').eq('status', 'delivered');
+  if (deliveredError) throw deliveredError;
+  const weight = delivered.reduce((sum, donation) => sum + Number(donation.quantity), 0);
+  const { count: active, error: activeError } = await db.from('donations')
+    .select('*', { count: 'exact', head: true })
+    .not('status', 'in', '(delivered,unmatched)');
+  if (activeError) throw activeError;
 
-  return { mealsRescued: meals, weightDivertedLbs: weight, co2AvoidedKg: co2Kg, donationsInProgress: active };
+  return {
+    mealsRescued: Math.round(weight / 1.2),
+    weightDivertedLbs: weight,
+    co2AvoidedKg: Math.round(weight * 2.5 * 0.4536 * 10) / 10,
+    donationsInProgress: active || 0,
+  };
 }
 
 module.exports = {

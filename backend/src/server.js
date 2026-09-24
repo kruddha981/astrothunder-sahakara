@@ -4,9 +4,7 @@ const cors = require('cors');
 const seed = require('./seed');
 const donationsRouter = require('./routes/donations');
 const miscRouter = require('./routes/misc');
-const authRouter = require('./routes/auth');
-
-seed(); // make sure shelters + drivers exist on first run
+const { router: authRouter, initializeAuth } = require('./routes/auth');
 
 const app = express();
 app.use(cors());
@@ -27,6 +25,16 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-  console.log(`Surplus-to-Shelter API running at http://localhost:${PORT}`);
+
+async function start() {
+  await seed();
+  await initializeAuth();
+  app.listen(PORT, () => {
+    console.log(`Surplus-to-Shelter API running at http://localhost:${PORT}`);
+  });
+}
+
+start().catch((error) => {
+  console.error('Failed to start the API:', error);
+  process.exitCode = 1;
 });
