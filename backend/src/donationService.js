@@ -63,11 +63,19 @@ async function tryMatch(donationId) {
   return getDonation(donationId);
 }
 
-async function createDonation({ donorName, foodType, quantity, expiryHours, zone }) {
+async function createDonation({ donorId, donorName, foodType, quantity, expiryHours, zone }) {
+  const { data: donor, error: donorError } = await db.from('users')
+    .select('id, name, role')
+    .eq('id', donorId)
+    .eq('role', 'donor')
+    .single();
+  if (donorError) throw donorError;
+
   const id = 'd' + Date.now() + Math.floor(Math.random() * 1000);
   const { error } = await db.from('donations').insert({
     id,
-    donor_name: donorName,
+    donor_id: donor.id,
+    donor_name: donor.name || donorName,
     food_type: foodType,
     quantity,
     expiry_hours: expiryHours,

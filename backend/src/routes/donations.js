@@ -17,9 +17,9 @@ router.get('/', async (req, res, next) => {
 router.post('/', authenticateToken, requireRole('donor'), async (req, res, next) => {
   const { donorName, foodType, quantity, expiryHours, zone } = req.body;
 
-  if (!donorName || !foodType || !quantity || !zone) {
+  if (!foodType || !quantity || !zone) {
     return res.status(400).json({
-      error: 'donorName, foodType, quantity, and zone are required',
+      error: 'foodType, quantity, and zone are required',
     });
   }
   if (typeof quantity !== 'number' || quantity <= 0) {
@@ -39,6 +39,7 @@ router.post('/', authenticateToken, requireRole('donor'), async (req, res, next)
 
   try {
     const donation = await donationService.createDonation({
+      donorId: req.user.id,
       donorName,
       foodType,
       quantity,
