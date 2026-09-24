@@ -141,6 +141,16 @@ async function markDelivered(donationId) {
   if (!donation) throw new Error('Donation not found');
   if (donation.status !== 'picked_up') throw new Error('Donation must be picked up before delivery');
 
+  const { data: completed, error: transactionError } = await db.rpc('deliver_donation', {
+    p_donation_id: donationId,
+  });
+  if (!transactionError) {
+    return Array.isArray(completed) ? completed[0] : completed;
+  }
+  if (transactionError.code !== 'PGRST202' && transactionError.code !== '42883') {
+    throw transactionError;
+  }
+
   const { error: donationError } = await db.from('donations').update({ status: 'delivered' }).eq('id', donationId);
   if (donationError) throw donationError;
 
