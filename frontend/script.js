@@ -150,27 +150,175 @@ document.addEventListener('DOMContentLoaded', () => {
   initStatsCounter();
   renderDispatchCard(currentLiveDispatch);
   initJaipurMap();
+  initAuth();
 });
 
 /* ==========================================================================
-   1. Live Ladder Active Step Countdown
+   1. Live Last Resort Ladder & Time-Warp Simulator (Judge Demo Engine)
    ========================================================================== */
+
+let timeWarpMinutes = 25;
+let timeWarpAutoPlayInterval = null;
+
 function initLadderCountdown() {
-  const timerEl = document.getElementById('ladder-timer');
-  if (!timerEl) return;
+  updateLadderDisplay(timeWarpMinutes);
+}
 
-  let totalSeconds = 28 * 60 + 40; // 28 minutes, 40 seconds
+/**
+ * Triggered whenever the user drags the Time-Warp Slider
+ */
+function onTimeWarpSliderChange(val) {
+  timeWarpMinutes = parseInt(val, 10);
+  updateLadderDisplay(timeWarpMinutes);
+}
 
-  setInterval(() => {
-    if (totalSeconds > 0) {
-      totalSeconds--;
-      const minutes = Math.floor(totalSeconds / 60);
-      const seconds = totalSeconds % 60;
-      timerEl.textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds} left`;
-    } else {
-      timerEl.textContent = 'Escalating...';
+/**
+ * Triggered by 1-click preset buttons (e.g. 15m, 65m, 115m, 180m)
+ */
+function setTimeWarp(minutes) {
+  timeWarpMinutes = minutes;
+  const slider = document.getElementById('timewarp-slider');
+  if (slider) slider.value = minutes;
+  updateLadderDisplay(minutes);
+}
+
+/**
+ * Toggle auto-simulation play across the full 4-hour ladder
+ */
+function toggleTimeWarpAutoPlay() {
+  const playBtn = document.getElementById('btn-timewarp-play');
+  const playIcon = document.getElementById('play-icon');
+  const playText = document.getElementById('play-text');
+  const slider = document.getElementById('timewarp-slider');
+
+  if (timeWarpAutoPlayInterval) {
+    // Stop playback
+    clearInterval(timeWarpAutoPlayInterval);
+    timeWarpAutoPlayInterval = null;
+    playBtn.classList.remove('playing');
+    playIcon.textContent = '▶';
+    playText.textContent = 'Auto Sim';
+  } else {
+    // Start auto-playback
+    if (timeWarpMinutes >= 235) {
+      timeWarpMinutes = 0;
+      if (slider) slider.value = 0;
     }
-  }, 1000);
+
+    playBtn.classList.add('playing');
+    playIcon.textContent = '⏸';
+    playText.textContent = 'Pause';
+
+    timeWarpAutoPlayInterval = setInterval(() => {
+      if (timeWarpMinutes < 240) {
+        timeWarpMinutes += 5;
+        if (slider) slider.value = timeWarpMinutes;
+        updateLadderDisplay(timeWarpMinutes);
+      } else {
+        // Reached end of ladder
+        toggleTimeWarpAutoPlay();
+      }
+    }, 350);
+  }
+}
+
+/**
+ * Updates UI tiers, badges, and colors according to simulated elapsed time
+ */
+function updateLadderDisplay(mins) {
+  const displayEl = document.getElementById('warp-time-display');
+  const badgeEl = document.getElementById('warp-tier-badge');
+  const tier1Timer = document.getElementById('tier-1-timer');
+
+  const row1 = document.getElementById('tier-row-1');
+  const row2 = document.getElementById('tier-row-2');
+  const row3 = document.getElementById('tier-row-3');
+  const row4 = document.getElementById('tier-row-4');
+
+  const p1 = document.getElementById('preset-t1');
+  const p2 = document.getElementById('preset-t2');
+  const p3 = document.getElementById('preset-t3');
+  const p4 = document.getElementById('preset-t4');
+
+  if (displayEl) displayEl.textContent = `${mins} min`;
+
+  // Reset preset active states
+  [p1, p2, p3, p4].forEach(p => p && p.classList.remove('active'));
+
+  // Reset all row classes
+  [row1, row2, row3, row4].forEach(r => {
+    if (r) {
+      r.classList.remove('active-tier', 'passed-tier');
+    }
+  });
+
+  if (mins <= 45) {
+    // TIER 1: Human Grade - Nearby Shelter (5km)
+    if (badgeEl) {
+      badgeEl.className = 'timewarp-tier-badge tier-1-badge';
+      badgeEl.textContent = 'Tier 1: Human Grade (Fresh)';
+    }
+    if (p1) p1.classList.add('active');
+
+    if (row1) row1.classList.add('active-tier');
+    if (tier1Timer) tier1Timer.textContent = `${45 - mins}m left`;
+
+    updateHeroCardStatus(1, 'Nearby Orphanage & Shelter (3.2km)', 'Hot & Fresh &bull; 100% Edible');
+
+  } else if (mins <= 90) {
+    // TIER 2: Regional Shelter / Bulk Re-heating (18km)
+    if (badgeEl) {
+      badgeEl.className = 'timewarp-tier-badge tier-2-badge';
+      badgeEl.textContent = 'Tier 2: Regional Shelter Hub';
+    }
+    if (p2) p2.classList.add('active');
+
+    if (row1) row1.classList.add('passed-tier');
+    if (row2) row2.classList.add('active-tier');
+
+    updateHeroCardStatus(2, 'Jaipur Rain Basera Central Hub (14.8km)', 'Re-heating Container &bull; Secondary Radius');
+
+  } else if (mins <= 150) {
+    // TIER 3: Gaushala / Animal Shelter
+    if (badgeEl) {
+      badgeEl.className = 'timewarp-tier-badge tier-3-badge';
+      badgeEl.textContent = 'Tier 3: Animal Shelter (Gaushala)';
+    }
+    if (p3) p3.classList.add('active');
+
+    if (row1) row1.classList.add('passed-tier');
+    if (row2) row2.classList.add('passed-tier');
+    if (row3) row3.classList.add('active-tier');
+
+    updateHeroCardStatus(3, 'Shree Krishna Gaushala (8.1km)', 'Quality-Tested Organic Cattle Feed');
+
+  } else {
+    // TIER 4: Municipal Biomethanation & Compost
+    if (badgeEl) {
+      badgeEl.className = 'timewarp-tier-badge tier-4-badge';
+      badgeEl.textContent = 'Tier 4: Zero-Landfill Compost';
+    }
+    if (p4) p4.classList.add('active');
+
+    if (row1) row1.classList.add('passed-tier');
+    if (row2) row2.classList.add('passed-tier');
+    if (row3) row3.classList.add('passed-tier');
+    if (row4) row4.classList.add('active-tier');
+
+    updateHeroCardStatus(4, 'JMC Biomethanation Facility', 'Zero Organic Waste &bull; Soil Enrichment');
+  }
+}
+
+/**
+ * Dynamic feedback in live dispatch card when Time-Warp moves
+ */
+function updateHeroCardStatus(tierNum, recipient, notes) {
+  const destEl = document.getElementById('card-destination');
+  const stagePill = document.getElementById('card-stage-pill');
+  if (destEl) destEl.textContent = recipient;
+  if (stagePill) {
+    stagePill.textContent = `TIER ${tierNum} ACTIVE`;
+  }
 }
 
 /* ==========================================================================
@@ -689,32 +837,600 @@ function handlePostSubmit(e) {
 }
 
 /* ==========================================================================
-   7. Sign In Modal & OTP Verification
+   7. Authentication, Free Email OTP & State Management
    ========================================================================== */
-function openSignInModal() {
+
+const AUTH_API_BASE = 'http://localhost:3001/api/auth';
+
+let authState = {
+  token: localStorage.getItem('sahakara_auth_token') || null,
+  user: JSON.parse(localStorage.getItem('sahakara_auth_user') || 'null')
+};
+
+let currentSignupData = {};
+let currentLoginEmail = '';
+let loginOtpTimer = null;
+let signupOtpTimer = null;
+
+/**
+ * Initializes Authentication State on page load
+ */
+async function initAuth() {
+  renderNavAuthState();
+  setupOtpDigitInputs('login-otp-inputs');
+  setupOtpDigitInputs('signup-otp-inputs');
+
+  if (authState.token) {
+    try {
+      const res = await fetch(`${AUTH_API_BASE}/me`, {
+        headers: { 'Authorization': `Bearer ${authState.token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.user) {
+          authState.user = data.user;
+          localStorage.setItem('sahakara_auth_user', JSON.stringify(data.user));
+          renderNavAuthState();
+        }
+      } else {
+        // Token invalid or expired
+        logout(false);
+      }
+    } catch (e) {
+      console.warn('[Auth] Running offline or backend unavailable; preserving cached session:', e.message);
+    }
+  }
+}
+
+/**
+ * Updates the Navbar according to whether user is logged in
+ */
+function renderNavAuthState() {
+  const container = document.getElementById('nav-actions-container');
+  if (!container) return;
+
+  if (authState.user) {
+    const roleEmoji = authState.user.role === 'donor' ? '🍛' : authState.user.role === 'shelter' ? '🏠' : '🛵';
+    const roleName = (authState.user.role || 'Partner').toUpperCase();
+    const initials = (authState.user.name || 'User').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+
+    container.innerHTML = `
+      <div class="user-nav-profile" title="Logged in as ${authState.user.name} (${authState.user.email})">
+        <div class="user-avatar">${initials}</div>
+        <div class="user-info">
+          <span class="user-nav-name">${authState.user.name}</span>
+          <span class="user-nav-role">${roleEmoji} ${roleName}</span>
+        </div>
+        <button type="button" class="btn-nav-logout" onclick="logout(true)" title="Sign out" aria-label="Sign out">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+        </button>
+      </div>
+      <button type="button" class="btn btn-primary" onclick="openPostModal()">
+        <span>Post surplus</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+    `;
+  } else {
+    container.innerHTML = `
+      <button type="button" class="btn btn-ghost" id="btn-nav-signin" onclick="openSignInModal()">Sign in</button>
+      <button type="button" class="btn btn-primary" onclick="openPostModal()">
+        <span>Post surplus food</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+    `;
+  }
+}
+
+function openSignInModal(initialTab = 'signin') {
   const modal = document.getElementById('modal-signin');
+  if (!modal) return;
   modal.hidden = false;
   document.body.style.overflow = 'hidden';
+  hideAuthAlert();
+  switchAuthTab(initialTab);
 }
 
 function closeSignInModal() {
   const modal = document.getElementById('modal-signin');
+  if (!modal) return;
   modal.hidden = true;
   document.body.style.overflow = '';
+  clearInterval(loginOtpTimer);
+  clearInterval(signupOtpTimer);
 }
 
-function handleSignInSubmit(e) {
-  e.preventDefault();
-  const phone = document.getElementById('login-phone').value;
-  const role = document.getElementById('login-role').value;
+function switchAuthTab(tab) {
+  const btnSignin = document.getElementById('tab-btn-signin');
+  const btnSignup = document.getElementById('tab-btn-signup');
+  const panelSignin = document.getElementById('auth-panel-signin');
+  const panelSignup = document.getElementById('auth-panel-signup');
 
-  const testOtp = '123456';
-  const enteredOtp = prompt(`OTP sent to +91 ${phone} (Test OTP: ${testOtp}). Enter OTP:`);
-  
-  if (enteredOtp === testOtp || enteredOtp) {
-    alert(`Welcome! Logged in as ${role.toUpperCase()} (Jaipur Cluster). Token: SK-AUTH-${Math.random().toString(36).substr(2, 9).toUpperCase()}`);
-    closeSignInModal();
+  hideAuthAlert();
+
+  if (tab === 'signin') {
+    btnSignin.classList.add('active');
+    btnSignin.setAttribute('aria-selected', 'true');
+    btnSignup.classList.remove('active');
+    btnSignup.setAttribute('aria-selected', 'false');
+    panelSignin.style.display = 'block';
+    panelSignup.style.display = 'none';
+  } else {
+    btnSignup.classList.add('active');
+    btnSignup.setAttribute('aria-selected', 'true');
+    btnSignin.classList.remove('active');
+    btnSignin.setAttribute('aria-selected', 'false');
+    panelSignup.style.display = 'block';
+    panelSignin.style.display = 'none';
   }
+}
+
+function toggleLoginMethod(method) {
+  const btnPwd = document.getElementById('btn-login-method-pwd');
+  const btnOtp = document.getElementById('btn-login-method-otp');
+  const formPwd = document.getElementById('form-login-pwd');
+  const formOtp = document.getElementById('form-login-otp');
+
+  hideAuthAlert();
+
+  if (method === 'password') {
+    btnPwd.classList.add('active');
+    btnOtp.classList.remove('active');
+    formPwd.style.display = 'flex';
+    formOtp.style.display = 'none';
+  } else {
+    btnOtp.classList.add('active');
+    btnPwd.classList.remove('active');
+    formOtp.style.display = 'block';
+    formPwd.style.display = 'none';
+  }
+}
+
+function selectSignupRole(role, element) {
+  document.querySelectorAll('.role-card').forEach(card => card.classList.remove('selected'));
+  element.classList.add('selected');
+  const radio = element.querySelector('input[type="radio"]');
+  if (radio) radio.checked = true;
+}
+
+function showAuthAlert(type, message, devOtp = null) {
+  const alertEl = document.getElementById('auth-alert');
+  if (!alertEl) return;
+
+  alertEl.className = `auth-alert ${type}`;
+  alertEl.hidden = false;
+
+  if (devOtp) {
+    alertEl.innerHTML = `
+      <div>${message}</div>
+      <button type="button" class="btn btn-secondary btn-sm" style="padding: 2px 8px; font-size: 0.75rem; white-space: nowrap;" onclick="autoFillOtp('${devOtp}')">
+        Fill OTP: <strong>${devOtp}</strong>
+      </button>
+    `;
+  } else {
+    alertEl.textContent = message;
+  }
+}
+
+function hideAuthAlert() {
+  const alertEl = document.getElementById('auth-alert');
+  if (alertEl) alertEl.hidden = true;
+}
+
+function autoFillOtp(otp) {
+  const digits = otp.split('');
+  // Check active panel
+  const activePanel = document.getElementById('auth-panel-signup').style.display === 'block' ? 'signup' : 'login';
+  const inputs = document.querySelectorAll(`#${activePanel}-otp-inputs .otp-box-digit`);
+  inputs.forEach((input, idx) => {
+    input.value = digits[idx] || '';
+  });
+  if (inputs.length > 0) inputs[inputs.length - 1].focus();
+}
+
+function setupOtpDigitInputs(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const inputs = container.querySelectorAll('.otp-box-digit');
+
+  inputs.forEach((input, index) => {
+    input.addEventListener('input', (e) => {
+      const val = e.target.value.replace(/[^0-9]/g, '');
+      e.target.value = val ? val.slice(-1) : '';
+
+      if (val && index < inputs.length - 1) {
+        inputs[index + 1].focus();
+      }
+    });
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Backspace' && !input.value && index > 0) {
+        inputs[index - 1].focus();
+      }
+    });
+
+    input.addEventListener('paste', (e) => {
+      e.preventDefault();
+      const pasteData = (e.clipboardData || window.clipboardData).getData('text').trim();
+      if (/^\d{6}$/.test(pasteData)) {
+        pasteData.split('').forEach((digit, i) => {
+          if (inputs[i]) inputs[i].value = digit;
+        });
+        inputs[inputs.length - 1].focus();
+      }
+    });
+  });
+}
+
+function getOtpCodeFromBoxes(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return '';
+  const inputs = container.querySelectorAll('.otp-box-digit');
+  return Array.from(inputs).map(i => i.value).join('');
+}
+
+function clearOtpBoxes(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.querySelectorAll('.otp-box-digit').forEach(i => i.value = '');
+}
+
+/**
+ * Handle direct Password Login
+ */
+async function handlePasswordLogin(e) {
+  e.preventDefault();
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const btn = document.getElementById('btn-submit-pwd-login');
+
+  btn.disabled = true;
+  btn.textContent = 'Authenticating...';
+  hideAuthAlert();
+
+  try {
+    const res = await fetch(`${AUTH_API_BASE}/login-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+
+    const data = await res.json();
+    if (res.ok && data.ok) {
+      setAuthSession(data.token, data.user);
+      closeSignInModal();
+      showToast(`Welcome back, ${data.user.name}!`);
+    } else {
+      showAuthAlert('error', data.error || 'Invalid credentials');
+    }
+  } catch (err) {
+    showAuthAlert('error', 'Unable to connect to backend server. Make sure port 3001 is running.');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<span>Sign In</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>`;
+  }
+}
+
+/**
+ * Request OTP for Login
+ */
+async function requestLoginOtp(isResend = false) {
+  const emailInput = document.getElementById('login-otp-email');
+  const email = emailInput.value.trim();
+
+  if (!email || !email.includes('@')) {
+    showAuthAlert('error', 'Please enter a valid email address');
+    return;
+  }
+
+  currentLoginEmail = email;
+  hideAuthAlert();
+
+  const btn = document.getElementById('btn-send-login-otp');
+  btn.disabled = true;
+  btn.textContent = 'Sending code...';
+
+  try {
+    const res = await fetch(`${AUTH_API_BASE}/send-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, purpose: 'login' })
+    });
+
+    const data = await res.json();
+    if (res.ok && data.ok) {
+      document.getElementById('login-otp-step-1').style.display = 'none';
+      document.getElementById('login-otp-step-2').hidden = false;
+      document.getElementById('login-target-email-display').textContent = email;
+      clearOtpBoxes('login-otp-inputs');
+
+      startOtpCountdown('login');
+      showAuthAlert('success', data.message, data.devOtp);
+    } else {
+      showAuthAlert('error', data.error || 'Failed to dispatch OTP');
+    }
+  } catch (err) {
+    showAuthAlert('error', 'Connection error. Check backend server.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Send Login Code';
+  }
+}
+
+function resetLoginOtpFlow() {
+  document.getElementById('login-otp-step-1').style.display = 'block';
+  document.getElementById('login-otp-step-2').hidden = true;
+  clearInterval(loginOtpTimer);
+  hideAuthAlert();
+}
+
+/**
+ * Submit OTP to complete Login
+ */
+async function submitLoginOtp() {
+  const otp = getOtpCodeFromBoxes('login-otp-inputs');
+  if (otp.length < 6) {
+    showAuthAlert('error', 'Please enter all 6 digits of the OTP');
+    return;
+  }
+
+  const btn = document.getElementById('btn-verify-login-otp');
+  btn.disabled = true;
+  btn.textContent = 'Verifying...';
+  hideAuthAlert();
+
+  try {
+    const res = await fetch(`${AUTH_API_BASE}/login-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: currentLoginEmail, otp })
+    });
+
+    const data = await res.json();
+    if (res.ok && data.ok) {
+      setAuthSession(data.token, data.user);
+      closeSignInModal();
+      showToast(`Welcome, ${data.user.name}!`);
+    } else {
+      showAuthAlert('error', data.error || 'Invalid or expired OTP');
+    }
+  } catch (err) {
+    showAuthAlert('error', 'Connection failed');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Verify & Sign In';
+  }
+}
+
+/**
+ * Handle Step 1 of Sign Up (Dispatch Free OTP)
+ */
+async function handleSignupStep1(e) {
+  e.preventDefault();
+  const name = document.getElementById('signup-name').value.trim();
+  const email = document.getElementById('signup-email').value.trim();
+  const password = document.getElementById('signup-password').value;
+  const org = document.getElementById('signup-org').value.trim();
+  const zone = document.getElementById('signup-zone').value;
+  const phone = document.getElementById('signup-phone').value.trim();
+  const role = document.querySelector('input[name="signup-role"]:checked')?.value || 'donor';
+
+  currentSignupData = { name, email, password, organization: org, zone, phone, role };
+
+  const btn = document.getElementById('btn-send-signup-otp');
+  btn.disabled = true;
+  btn.textContent = 'Sending free code...';
+  hideAuthAlert();
+
+  try {
+    const res = await fetch(`${AUTH_API_BASE}/send-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, purpose: 'signup', name, role, organization: org })
+    });
+
+    const data = await res.json();
+    if (res.ok && data.ok) {
+      document.getElementById('signup-step-1').style.display = 'none';
+      document.getElementById('signup-step-2').hidden = false;
+      document.getElementById('signup-target-email-display').textContent = email;
+      clearOtpBoxes('signup-otp-inputs');
+
+      startOtpCountdown('signup');
+      showAuthAlert('success', data.message, data.devOtp);
+    } else {
+      showAuthAlert('error', data.error || 'Failed to send verification code');
+    }
+  } catch (err) {
+    showAuthAlert('error', 'Could not reach auth server');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<span>Send Verification Code</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>`;
+  }
+}
+
+function resetSignupStep() {
+  document.getElementById('signup-step-1').style.display = 'block';
+  document.getElementById('signup-step-2').hidden = true;
+  clearInterval(signupOtpTimer);
+  hideAuthAlert();
+}
+
+function resendSignupOtp() {
+  if (!currentSignupData.email) return;
+  handleSignupStep1({ preventDefault: () => {} });
+}
+
+/**
+ * Submit Signup OTP & complete registration
+ */
+async function submitSignupVerification() {
+  const otp = getOtpCodeFromBoxes('signup-otp-inputs');
+  if (otp.length < 6) {
+    showAuthAlert('error', 'Please enter all 6 digits');
+    return;
+  }
+
+  const btn = document.getElementById('btn-complete-signup');
+  btn.disabled = true;
+  btn.textContent = 'Registering...';
+  hideAuthAlert();
+
+  try {
+    const res = await fetch(`${AUTH_API_BASE}/verify-and-register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...currentSignupData, otp })
+    });
+
+    const data = await res.json();
+    if (res.ok && data.ok) {
+      setAuthSession(data.token, data.user);
+      closeSignInModal();
+      showToast(`Account verified! Welcome to Sahakara, ${data.user.name}.`);
+    } else {
+      showAuthAlert('error', data.error || 'Verification failed');
+    }
+  } catch (err) {
+    showAuthAlert('error', 'Connection error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Verify & Create Account';
+  }
+}
+
+/**
+ * OTP Timer Countdown Helper
+ */
+function startOtpCountdown(type) {
+  let seconds = 45;
+  const countdownEl = document.getElementById(`${type}-otp-countdown`);
+  const resendBtn = document.getElementById(`btn-resend-${type}-otp`);
+  const timerText = document.getElementById(`${type}-otp-timer-text`);
+
+  if (!countdownEl || !resendBtn) return;
+
+  resendBtn.disabled = true;
+  timerText.style.display = 'inline';
+  countdownEl.textContent = seconds;
+
+  const timerRef = setInterval(() => {
+    seconds--;
+    countdownEl.textContent = seconds;
+    if (seconds <= 0) {
+      clearInterval(timerRef);
+      resendBtn.disabled = false;
+      timerText.style.display = 'none';
+    }
+  }, 1000);
+
+  if (type === 'login') {
+    clearInterval(loginOtpTimer);
+    loginOtpTimer = timerRef;
+  } else {
+    clearInterval(signupOtpTimer);
+    signupOtpTimer = timerRef;
+  }
+}
+
+/**
+ * 1-Click Persona Login (Pre-configured test accounts)
+ */
+async function quickLoginPersona(role) {
+  hideAuthAlert();
+  const credentials = {
+    donor: { email: 'donor@sahakara.org', password: 'Sahakara@123' },
+    shelter: { email: 'shelter@sahakara.org', password: 'Sahakara@123' },
+    driver: { email: 'driver@sahakara.org', password: 'Sahakara@123' }
+  };
+
+  const cred = credentials[role];
+  if (!cred) return;
+
+  try {
+    const res = await fetch(`${AUTH_API_BASE}/login-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(cred)
+    });
+
+    const data = await res.json();
+    if (res.ok && data.ok) {
+      setAuthSession(data.token, data.user);
+      closeSignInModal();
+      showToast(`Logged in as demo persona: ${data.user.name} (${data.user.role.toUpperCase()})`);
+    } else {
+      showAuthAlert('error', 'Could not login persona');
+    }
+  } catch (e) {
+    showAuthAlert('error', 'Backend offline. Please start backend on port 3001.');
+  }
+}
+
+/**
+ * Store auth session in localStorage & update UI
+ */
+function setAuthSession(token, user) {
+  authState.token = token;
+  authState.user = user;
+  localStorage.setItem('sahakara_auth_token', token);
+  localStorage.setItem('sahakara_auth_user', JSON.stringify(user));
+  renderNavAuthState();
+}
+
+/**
+ * Logout
+ */
+function logout(showNotice = true) {
+  authState.token = null;
+  authState.user = null;
+  localStorage.removeItem('sahakara_auth_token');
+  localStorage.removeItem('sahakara_auth_user');
+  renderNavAuthState();
+  if (showNotice) {
+    showToast('You have been signed out.');
+  }
+}
+
+/**
+ * Lightweight Toast Notification
+ */
+function showToast(message) {
+  let toast = document.getElementById('sahakara-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'sahakara-toast';
+    toast.style.cssText = `
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #111827;
+      color: #FFFFFF;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+      z-index: 99999;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border: 1px solid #374151;
+      transition: all 0.3s ease;
+      opacity: 0;
+      transform: translateY(10px);
+    `;
+    document.body.appendChild(toast);
+  }
+
+  toast.innerHTML = `<span>🌱</span> <span>${message}</span>`;
+  toast.style.opacity = '1';
+  toast.style.transform = 'translateY(0)';
+
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateY(10px)';
+  }, 4000);
 }
 
 /* ==========================================================================

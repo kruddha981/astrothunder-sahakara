@@ -44,6 +44,28 @@ db.exec(`
     FOREIGN KEY (matched_shelter_id) REFERENCES shelters(id),
     FOREIGN KEY (assigned_driver_id) REFERENCES drivers(id)
   );
+  CREATE TABLE IF NOT EXISTS users (
+    id            TEXT PRIMARY KEY,
+    name          TEXT NOT NULL,
+    email         TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    role          TEXT NOT NULL,          -- donor | shelter | driver | volunteer
+    organization  TEXT,
+    phone         TEXT,
+    zone          TEXT DEFAULT 'Central',
+    created_at    TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS otp_verifications (
+    id         TEXT PRIMARY KEY,
+    email      TEXT NOT NULL,
+    otp_code   TEXT NOT NULL,
+    purpose    TEXT NOT NULL,            -- signup | login | reset
+    payload    TEXT,                     -- temporary JSON data
+    expires_at INTEGER NOT NULL,         -- epoch timestamp in ms
+    verified   INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
 `);
 
 module.exports = db;

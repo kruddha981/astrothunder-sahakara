@@ -55,8 +55,8 @@
       </nav>
 
       <!-- Action Buttons -->
-      <div class="nav-actions">
-        <button type="button" class="btn btn-ghost" onclick="openSignInModal()">Sign in</button>
+      <div class="nav-actions" id="nav-actions-container">
+        <button type="button" class="btn btn-ghost" id="btn-nav-signin" onclick="openSignInModal()">Sign in</button>
         <button type="button" class="btn btn-primary" onclick="openPostModal()">
           <span>Post surplus food</span>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
@@ -343,62 +343,120 @@
             </div>
           </div>
 
-          <!-- Card B: Last Resort Ladder with Live Countdown (Right Column) -->
-          <div class="bento-card bento-span-4">
-            <div class="bento-card-header">
+          <!-- Card B: Last Resort Ladder with Time-Warp Live Simulator (Right Column) -->
+          <div class="bento-card bento-span-4" id="ladder-card">
+            <div class="bento-card-header" style="margin-bottom: 12px;">
               <div class="bento-icon">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
               </div>
               <div class="bento-text">
-                <h3 class="bento-title">Last Resort Ladder</h3>
-                <p class="bento-sub">Guaranteed fallback tier if primary recipient is unavailable.</p>
+                <div style="display:flex;align-items:center;justify-content:space-between;">
+                  <h3 class="bento-title">Last Resort Ladder</h3>
+                  <span class="live-pill" style="font-size:0.625rem;padding:2px 8px;">⚡ TIME-WARP DEMO</span>
+                </div>
+                <p class="bento-sub">Zero organic food reaches dumpsters. Fallbacks escalate automatically as time elapses.</p>
               </div>
             </div>
 
-            <!-- Ladder List -->
-            <div class="bento-ladder-list">
+            <!-- Time-Warp Slider Simulator Control -->
+            <div class="timewarp-controller">
+              <div class="timewarp-top-row">
+                <span class="timewarp-label">⏱️ Elapsed Post Time:</span>
+                <div class="timewarp-status-pills">
+                  <span class="timewarp-time-display" id="warp-time-display">25 min</span>
+                  <span class="timewarp-tier-badge tier-1-badge" id="warp-tier-badge">Tier 1: Human Grade</span>
+                </div>
+              </div>
+
+              <!-- Interactive Range Slider (0 to 240 mins) -->
+              <div class="timewarp-slider-wrap">
+                <input 
+                  type="range" 
+                  id="timewarp-slider" 
+                  min="0" 
+                  max="240" 
+                  value="25" 
+                  step="5" 
+                  class="timewarp-range" 
+                  aria-label="Simulate elapsed food rescue time in minutes"
+                  oninput="onTimeWarpSliderChange(this.value)"
+                >
+                <div class="timewarp-scale">
+                  <span>0m (Fresh)</span>
+                  <span>45m</span>
+                  <span>90m</span>
+                  <span>150m</span>
+                  <span>240m (Compost)</span>
+                </div>
+              </div>
+
+              <!-- Quick Presets & Auto-Play Controls -->
+              <div class="timewarp-actions">
+                <div class="timewarp-presets">
+                  <button type="button" class="preset-btn active" id="preset-t1" onclick="setTimeWarp(15)">15m (Nearby)</button>
+                  <button type="button" class="preset-btn" id="preset-t2" onclick="setTimeWarp(65)">65m (Regional)</button>
+                  <button type="button" class="preset-btn" id="preset-t3" onclick="setTimeWarp(115)">115m (Gaushala)</button>
+                  <button type="button" class="preset-btn" id="preset-t4" onclick="setTimeWarp(180)">180m (Compost)</button>
+                </div>
+                <button type="button" class="btn-timewarp-play" id="btn-timewarp-play" onclick="toggleTimeWarpAutoPlay()">
+                  <span id="play-icon">▶</span>
+                  <span id="play-text">Auto Sim</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Dynamic Ladder List -->
+            <div class="bento-ladder-list" id="ladder-tiers-container">
               
-              <div class="ladder-row active-tier">
+              <!-- Tier 1: Nearby Shelter (0 - 45 min) -->
+              <div class="ladder-row active-tier tier-row-t1" id="tier-row-1">
                 <div class="tier-num">01</div>
                 <div class="tier-info">
                   <div class="tier-title-row">
-                    <strong>Nearby shelter</strong>
-                    <span class="tier-countdown" id="ladder-timer">28:40 left</span>
+                    <strong class="tier-heading">Nearby Shelter (5km)</strong>
+                    <span class="tier-countdown" id="tier-1-timer">20m left</span>
                   </div>
-                  <span class="tier-desc">Primary 5km radius distribution</span>
+                  <span class="tier-desc">Aasha Orphanage &amp; Shelter &bull; 100% Fresh Human Grade</span>
+                  <div class="tier-live-indicator">● ACTIVE RECIPIENT NODE</div>
                 </div>
               </div>
 
-              <div class="ladder-row">
+              <!-- Tier 2: Farther Regional Shelter (46 - 90 min) -->
+              <div class="ladder-row tier-row-t2" id="tier-row-2">
                 <div class="tier-num">02</div>
                 <div class="tier-info">
                   <div class="tier-title-row">
-                    <strong>Farther shelter</strong>
-                    <span class="tier-meta">Secondary 18km</span>
+                    <strong class="tier-heading">Regional Shelter (18km)</strong>
+                    <span class="tier-meta">Secondary Hub</span>
                   </div>
-                  <span class="tier-desc">Bulk relays &amp; larger community kitchens</span>
+                  <span class="tier-desc">Jaipur Rain Basera &bull; Bulk Reheating &amp; Kitchen Relay</span>
+                  <div class="tier-live-indicator">● ACTIVE RECIPIENT NODE</div>
                 </div>
               </div>
 
-              <div class="ladder-row">
+              <!-- Tier 3: Gaushala / Animal Shelter (91 - 150 min) -->
+              <div class="ladder-row tier-row-t3" id="tier-row-3">
                 <div class="tier-num">03</div>
                 <div class="tier-info">
                   <div class="tier-title-row">
-                    <strong>Animal shelter (gaushala)</strong>
-                    <span class="tier-meta">Raw / Grain</span>
+                    <strong class="tier-heading">Animal Shelter (Gaushala)</strong>
+                    <span class="tier-meta">Animal Feed</span>
                   </div>
-                  <span class="tier-desc">Registered cattle &amp; animal rescues</span>
+                  <span class="tier-desc">Shree Krishna Gaushala &bull; Quality-Tested Organic Feed</span>
+                  <div class="tier-live-indicator">● ACTIVE RECIPIENT NODE</div>
                 </div>
               </div>
 
-              <div class="ladder-row compost-tier">
+              <!-- Tier 4: Municipal Compost (151 - 240 min) -->
+              <div class="ladder-row compost-tier tier-row-t4" id="tier-row-4">
                 <div class="tier-num">04</div>
                 <div class="tier-info">
                   <div class="tier-title-row">
-                    <strong>Municipal Compost</strong>
-                    <span class="tier-meta">Soil Recovery</span>
+                    <strong class="tier-heading">Municipal Compost Facility</strong>
+                    <span class="tier-meta">Zero Landfill</span>
                   </div>
-                  <span class="tier-desc">Zero organic waste reaches landfill</span>
+                  <span class="tier-desc">JMC Biomethanation Plant &bull; Organic Bio-Fertilizer</span>
+                  <div class="tier-live-indicator">● ACTIVE RECIPIENT NODE</div>
                 </div>
               </div>
 
@@ -974,34 +1032,241 @@
     </div>
   </div>
 
-  <!-- Sign In Modal -->
+  <!-- Authentication & Access Modal -->
   <div class="modal-backdrop" id="modal-signin" role="dialog" aria-modal="true" aria-labelledby="signin-title" hidden>
-    <div class="modal-dialog modal-dialog-sm">
+    <div class="modal-dialog auth-modal-dialog">
+      
+      <!-- Modal Header -->
       <div class="modal-header">
         <div>
-          <span class="modal-kicker">DISPATCH PORTAL</span>
-          <h2 id="signin-title" class="modal-heading">Partner Sign in</h2>
+          <span class="modal-kicker">NETWORK DISPATCH ACCESS</span>
+          <h2 id="signin-title" class="modal-heading">Sahakara Portal</h2>
         </div>
-        <button type="button" class="modal-close-btn" onclick="closeSignInModal()">&times;</button>
+        <button type="button" class="modal-close-btn" onclick="closeSignInModal()" aria-label="Close modal">&times;</button>
       </div>
-      <form class="modal-form-body" onsubmit="handleSignInSubmit(event)">
-        <div class="form-group">
-          <label for="login-phone" class="input-label">Registered Phone Number</label>
-          <input type="tel" id="login-phone" class="custom-input" placeholder="10-digit mobile number" required>
+
+      <!-- Auth Alert Banner (for errors / dev OTP copy) -->
+      <div id="auth-alert" class="auth-alert" hidden></div>
+
+      <!-- Auth Tabs Switcher -->
+      <div class="auth-tabs" role="tablist">
+        <button type="button" class="auth-tab active" id="tab-btn-signin" onclick="switchAuthTab('signin')" role="tab" aria-selected="true">
+          <span>Sign In</span>
+        </button>
+        <button type="button" class="auth-tab" id="tab-btn-signup" onclick="switchAuthTab('signup')" role="tab" aria-selected="false">
+          <span>Create Account</span>
+        </button>
+      </div>
+
+      <!-- TAB 1: SIGN IN -->
+      <div id="auth-panel-signin" class="auth-panel">
+        
+        <!-- Login Method Toggle (Password vs Email OTP) -->
+        <div class="auth-sub-toggle">
+          <button type="button" class="sub-toggle-btn active" id="btn-login-method-pwd" onclick="toggleLoginMethod('password')">Password</button>
+          <button type="button" class="sub-toggle-btn" id="btn-login-method-otp" onclick="toggleLoginMethod('otp')">Email OTP (Free)</button>
         </div>
-        <div class="form-group">
-          <label for="login-role" class="input-label">Node Account Type</label>
-          <select id="login-role" class="custom-select">
-            <option value="donor">Commercial Food Donor</option>
-            <option value="shelter">Verified Shelter Manager</option>
-            <option value="driver">Volunteer Driver</option>
-          </select>
+
+        <!-- Form A: Password Login -->
+        <form id="form-login-pwd" class="modal-form-body" onsubmit="handlePasswordLogin(event)">
+          <div class="form-group">
+            <label for="login-email" class="input-label">Email Address <span class="req">*</span></label>
+            <input type="email" id="login-email" class="custom-input" placeholder="e.g. donor@sahakara.org" required autocomplete="email">
+          </div>
+          <div class="form-group">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <label for="login-password" class="input-label">Password <span class="req">*</span></label>
+              <a href="javascript:void(0)" onclick="toggleLoginMethod('otp')" class="input-hint-link">Forgot password? Use OTP</a>
+            </div>
+            <input type="password" id="login-password" class="custom-input" placeholder="Enter your password" required autocomplete="current-password">
+          </div>
+
+          <div class="modal-footer" style="padding-top:10px;">
+            <button type="button" class="btn btn-secondary" onclick="closeSignInModal()">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="btn-submit-pwd-login">
+              <span>Sign In</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </button>
+          </div>
+        </form>
+
+        <!-- Form B: Email OTP Login -->
+        <div id="form-login-otp" class="modal-form-body" style="display: none;">
+          <div id="login-otp-step-1">
+            <div class="form-group">
+              <label for="login-otp-email" class="input-label">Registered Email Address <span class="req">*</span></label>
+              <input type="email" id="login-otp-email" class="custom-input" placeholder="e.g. donor@sahakara.org" required>
+            </div>
+            <div class="modal-footer" style="padding-top:10px;">
+              <button type="button" class="btn btn-secondary" onclick="closeSignInModal()">Cancel</button>
+              <button type="button" class="btn btn-primary" id="btn-send-login-otp" onclick="requestLoginOtp()">
+                <span>Send Login Code</span>
+              </button>
+            </div>
+          </div>
+
+          <div id="login-otp-step-2" hidden>
+            <p class="auth-step-desc">
+              We sent a 6-digit verification code to <strong id="login-target-email-display"></strong>.
+            </p>
+            <div class="form-group">
+              <label class="input-label">Enter 6-Digit Code</label>
+              <div class="otp-boxes" id="login-otp-inputs">
+                <input type="text" maxlength="1" class="otp-box-digit" data-idx="0" inputmode="numeric" pattern="[0-9]*">
+                <input type="text" maxlength="1" class="otp-box-digit" data-idx="1" inputmode="numeric" pattern="[0-9]*">
+                <input type="text" maxlength="1" class="otp-box-digit" data-idx="2" inputmode="numeric" pattern="[0-9]*">
+                <input type="text" maxlength="1" class="otp-box-digit" data-idx="3" inputmode="numeric" pattern="[0-9]*">
+                <input type="text" maxlength="1" class="otp-box-digit" data-idx="4" inputmode="numeric" pattern="[0-9]*">
+                <input type="text" maxlength="1" class="otp-box-digit" data-idx="5" inputmode="numeric" pattern="[0-9]*">
+              </div>
+            </div>
+            <div class="otp-resend-row">
+              <span id="login-otp-timer-text">Resend in <span id="login-otp-countdown">45</span>s</span>
+              <button type="button" class="btn-resend-link" id="btn-resend-login-otp" onclick="requestLoginOtp(true)" disabled>Resend Code</button>
+            </div>
+            <div class="modal-footer" style="padding-top:10px;">
+              <button type="button" class="btn btn-secondary" onclick="resetLoginOtpFlow()">Back</button>
+              <button type="button" class="btn btn-primary" id="btn-verify-login-otp" onclick="submitLoginOtp()">
+                <span>Verify &amp; Sign In</span>
+              </button>
+            </div>
+          </div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" onclick="closeSignInModal()">Cancel</button>
-          <button type="submit" class="btn btn-primary">Send Login OTP</button>
+
+      </div>
+
+      <!-- TAB 2: CREATE ACCOUNT (WITH EMAIL OTP) -->
+      <div id="auth-panel-signup" class="auth-panel" style="display: none;">
+        
+        <!-- Step 1: User Details -->
+        <div id="signup-step-1">
+          <form class="modal-form-body" onsubmit="handleSignupStep1(event)">
+            
+            <div class="form-group">
+              <label class="input-label">Select Account Role <span class="req">*</span></label>
+              <div class="role-cards-grid">
+                <label class="role-card selected" onclick="selectSignupRole('donor', this)">
+                  <input type="radio" name="signup-role" value="donor" checked hidden>
+                  <span class="role-icon">🍛</span>
+                  <span class="role-name">Commercial Donor</span>
+                  <span class="role-sub">Restaurant / Mess / Banquet</span>
+                </label>
+                <label class="role-card" onclick="selectSignupRole('shelter', this)">
+                  <input type="radio" name="signup-role" value="shelter" hidden>
+                  <span class="role-icon">🏠</span>
+                  <span class="role-name">Shelter / NGO</span>
+                  <span class="role-sub">Orphanage / Food Bank</span>
+                </label>
+                <label class="role-card" onclick="selectSignupRole('driver', this)">
+                  <input type="radio" name="signup-role" value="driver" hidden>
+                  <span class="role-icon">🛵</span>
+                  <span class="role-name">Volunteer Driver</span>
+                  <span class="role-sub">Rescue Fleet Volunteer</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label for="signup-name" class="input-label">Full Name <span class="req">*</span></label>
+                <input type="text" id="signup-name" class="custom-input" placeholder="e.g. Sujal Patel" required>
+              </div>
+              <div class="form-group">
+                <label for="signup-email" class="input-label">Work / Personal Email <span class="req">*</span></label>
+                <input type="email" id="signup-email" class="custom-input" placeholder="e.g. sujal@example.com" required>
+              </div>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label for="signup-org" class="input-label">Organization / Business Name</label>
+                <input type="text" id="signup-org" class="custom-input" placeholder="e.g. Royal Palace Banquet">
+              </div>
+              <div class="form-group">
+                <label for="signup-zone" class="input-label">Jaipur Cluster Zone</label>
+                <select id="signup-zone" class="custom-select">
+                  <option value="Central">Central (MI Road / C-Scheme)</option>
+                  <option value="Mansarovar">Mansarovar Cluster</option>
+                  <option value="Malviya Nagar">Malviya Nagar / Jagatpura</option>
+                  <option value="Vaishali Nagar">Vaishali Nagar / Chitrakoot</option>
+                  <option value="Tonk Road">Tonk Road / Durgapura</option>
+                  <option value="Amer Road">Amer / Vidyadhar Nagar</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label for="signup-phone" class="input-label">Phone Number (Optional)</label>
+                <input type="tel" id="signup-phone" class="custom-input" placeholder="+91 98765 43210">
+              </div>
+              <div class="form-group">
+                <label for="signup-password" class="input-label">Create Password <span class="req">*</span></label>
+                <input type="password" id="signup-password" class="custom-input" placeholder="Min. 6 characters" minlength="6" required>
+              </div>
+            </div>
+
+            <div class="modal-footer" style="padding-top:10px;">
+              <button type="button" class="btn btn-secondary" onclick="closeSignInModal()">Cancel</button>
+              <button type="submit" class="btn btn-primary" id="btn-send-signup-otp">
+                <span>Send Verification Code</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              </button>
+            </div>
+          </form>
         </div>
-      </form>
+
+        <!-- Step 2: Enter Verification Code -->
+        <div id="signup-step-2" hidden>
+          <p class="auth-step-desc">
+            We sent a free 6-digit confirmation code to <strong id="signup-target-email-display"></strong>.
+          </p>
+          <div class="form-group">
+            <label class="input-label">Enter 6-Digit Email Code</label>
+            <div class="otp-boxes" id="signup-otp-inputs">
+              <input type="text" maxlength="1" class="otp-box-digit" data-idx="0" inputmode="numeric" pattern="[0-9]*">
+              <input type="text" maxlength="1" class="otp-box-digit" data-idx="1" inputmode="numeric" pattern="[0-9]*">
+              <input type="text" maxlength="1" class="otp-box-digit" data-idx="2" inputmode="numeric" pattern="[0-9]*">
+              <input type="text" maxlength="1" class="otp-box-digit" data-idx="3" inputmode="numeric" pattern="[0-9]*">
+              <input type="text" maxlength="1" class="otp-box-digit" data-idx="4" inputmode="numeric" pattern="[0-9]*">
+              <input type="text" maxlength="1" class="otp-box-digit" data-idx="5" inputmode="numeric" pattern="[0-9]*">
+            </div>
+          </div>
+          <div class="otp-resend-row">
+            <span id="signup-otp-timer-text">Resend code in <span id="signup-otp-countdown">45</span>s</span>
+            <button type="button" class="btn-resend-link" id="btn-resend-signup-otp" onclick="resendSignupOtp()" disabled>Resend Code</button>
+          </div>
+          <div class="modal-footer" style="padding-top:10px;">
+            <button type="button" class="btn btn-secondary" onclick="resetSignupStep()">Back</button>
+            <button type="button" class="btn btn-primary" id="btn-complete-signup" onclick="submitSignupVerification()">
+              <span>Verify &amp; Create Account</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 1-Click Instant Persona Quick Switcher (For Demo & Testing) -->
+      <div class="auth-personas-box">
+        <div class="personas-header">
+          <span class="personas-label">⚡ 1-Click Demo Personas (Zero Setup)</span>
+        </div>
+        <div class="personas-grid">
+          <button type="button" class="persona-chip" onclick="quickLoginPersona('donor')">
+            <span class="persona-badge donor-badge">DONOR</span>
+            <span class="persona-text">Rajesh (Jaipur Marriott)</span>
+          </button>
+          <button type="button" class="persona-chip" onclick="quickLoginPersona('shelter')">
+            <span class="persona-badge shelter-badge">SHELTER</span>
+            <span class="persona-text">Anjali (Aasha NGO)</span>
+          </button>
+          <button type="button" class="persona-chip" onclick="quickLoginPersona('driver')">
+            <span class="persona-badge driver-badge">DRIVER</span>
+            <span class="persona-text">Kabir (Express Fleet)</span>
+          </button>
+        </div>
+      </div>
+
     </div>
   </div>
 

@@ -4,6 +4,7 @@ const cors = require('cors');
 const seed = require('./seed');
 const donationsRouter = require('./routes/donations');
 const miscRouter = require('./routes/misc');
+const authRouter = require('./routes/auth');
 
 seed(); // make sure shelters + drivers exist on first run
 
@@ -13,6 +14,7 @@ app.use(express.json());
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 
+app.use('/api/auth', authRouter);
 app.use('/api/donations', donationsRouter);
 app.use('/api', miscRouter); // /api/shelters, /api/drivers, /api/stats
 
